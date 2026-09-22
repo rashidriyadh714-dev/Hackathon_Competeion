@@ -10,6 +10,8 @@ servers:
 tags:
   - name: health
     description: Health operations
+  - name: actionlayer
+    description: Source-grounded workflow operations
 paths:
   /healthz:
     get:
@@ -24,7 +26,143 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+  /v1/demo/competition:
+    get:
+      operationId: getDemoCompetition
+      tags: [actionlayer]
+      summary: Get the fictional competition demo
+      responses:
+        "200":
+          description: Deterministic demo workflow
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DemoCompetition"
+  /v1/agents:
+    get:
+      operationId: listAgents
+      tags: [actionlayer]
+      summary: List the authenticated user's agents
+      responses:
+        "200":
+          description: Agent list
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items, nextCursor]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Agent"
+                  nextCursor:
+                    type: [string, "null"]
+    post:
+      operationId: createAgent
+      tags: [actionlayer]
+      summary: Create an agent
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateAgentRequest"
+      responses:
+        "201":
+          description: Agent created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Agent"
+        "400":
+          description: Invalid request
+  /v1/agents/{agentId}/tasks:
+    get:
+      operationId: listAgentTasks
+      tags: [actionlayer]
+      summary: List tasks in an agent
+      parameters:
+        - $ref: "#/components/parameters/AgentId"
+      responses:
+        "200":
+          description: Task list
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Task"
+  /v1/agents/{agentId}/audit:
+    get:
+      operationId: auditAgent
+      tags: [actionlayer]
+      summary: Run a readiness audit
+      parameters:
+        - $ref: "#/components/parameters/AgentId"
+      responses:
+        "200":
+          description: Readiness audit
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuditResult"
+  /v1/tasks/{taskId}/evidence:
+    post:
+      operationId: createEvidence
+      tags: [actionlayer]
+      summary: Attach evidence to a task
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateEvidenceRequest"
+      responses:
+        "201":
+          description: Evidence and partial verification
+  /v1/tasks/{taskId}/start:
+    post:
+      operationId: startTask
+      tags: [actionlayer]
+      summary: Start a task
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+      responses:
+        "200":
+          description: Updated task
+  /v1/tasks/{taskId}/complete:
+    post:
+      operationId: completeTask
+      tags: [actionlayer]
+      summary: Record user-confirmed completion
+      parameters:
+        - $ref: "#/components/parameters/TaskId"
+      responses:
+        "200":
+          description: Updated task
 components:
+  parameters:
+    AgentId:
+      name: agentId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    TaskId:
+      name: taskId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
   schemas:
     HealthStatus:
       type: object
@@ -33,4 +171,114 @@ components:
           type: string
       required:
         - status
+    Agent:
+      type: object
+      required: [id, title, agentType, status, isDemo]
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        agentType:
+          type: string
+        status:
+          type: string
+        isDemo:
+          type: boolean
+    Task:
+      type: object
+      required: [id, title, description, category, priority, status]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        description:
+          type: string
+        category:
+          type: string
+        priority:
+          type: string
+        status:
+          type: string
+        estimatedMinutes:
+          type: integer
+    CreateAgentRequest:
+      type: object
+      required: [title]
+      properties:
+        title:
+          type: string
+          minLength: 3
+        agentType:
+          type: string
+        isDemo:
+          type: boolean
+    CreateEvidenceRequest:
+      type: object
+      required: [evidenceType, userExplanation]
+      properties:
+        evidenceType:
+          type: string
+        textValue:
+          type: string
+        userExplanation:
+          type: string
+    AuditResult:
+      type: object
+      required: [ready, missing, blocked, uncertain, nextAction]
+      properties:
+        ready:
+          type: array
+          items:
+            type: string
+        missing:
+          type: array
+          items:
+            type: string
+        blocked:
+          type: array
+          items:
+            type: string
+        uncertain:
+          type: array
+          items:
+            type: string
+        nextAction:
+          type: string
+    DemoCompetition:
+      type: object
+      required: [id, title, organizer, agentType, status, isDemo, source, claims, tasks, readiness]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        organizer:
+          type: string
+        agentType:
+          type: string
+        status:
+          type: string
+        isDemo:
+          type: boolean
+        source:
+          type: object
+          required: [filename, type, privacy, checksum]
+          properties:
+            filename: { type: string }
+            type: { type: string }
+            privacy: { type: string }
+            checksum: { type: string }
+        claims:
+          type: array
+          items:
+            type: object
+        tasks:
+          type: array
+          items:
+            $ref: "#/components/schemas/Task"
+        readiness:
+          type: object
 
