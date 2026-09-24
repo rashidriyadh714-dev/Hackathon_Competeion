@@ -38,7 +38,7 @@ Generic AI tools hallucinate dates and produce disjointed todo lists without gro
 | --- | --- | --- |
 | Fully functional local application | Verified | Mobile PWA running on port 8081; Express API on port 5001 |
 | Working demonstration walkthrough | Verified | 14-step critical journey documented in `docs/demo-script.md` |
-| Public GitHub repository structure | Verified | Standard monorepo without Replit proprietary dependencies |
+| Public GitHub repository structure | Verified | Standard monorepo without proprietary dependencies |
 | Apache-2.0 Open-Source License | Verified | `LICENSE` file containing full Apache-2.0 legal text |
 | Complete local installation instructions | Verified | Step-by-step setup in `README.md` and Docker Compose |
 | Clear explanation (What, Who, Why, How) | Verified | Section 1 above and `README.md` |

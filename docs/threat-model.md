@@ -19,7 +19,7 @@
 | Stale deadline | Late submission | Retrieval timestamp, deadline confidence, audit history, readiness risk |
 | Offline device loss | Progress loss | Server sync contract; local cache is treated as a convenience, not the source of truth |
 | Malicious URL or file | Service compromise | Type/size limits, malware scanning, safe URL fetching, isolated extraction workers |
-| Secret exposure in logs | Account compromise | Replit Secrets, structured redacted logging, no credentials in fixtures |
+| Secret exposure in logs | Account compromise | Environment variables, structured redacted logging, no credentials in fixtures |
 
 ## Residual risks
 

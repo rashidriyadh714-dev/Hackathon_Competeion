@@ -2,6 +2,7 @@
 
 > **Autonomous Opportunity Execution Agent**  
 > *Shipaton 2026 Next Gen Award Submission*  
+> *Built by Rashid Riyadh*  
 > Licensed under Apache-2.0 · 100% Open Source · Locally Executable
 
 ---

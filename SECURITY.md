@@ -17,7 +17,7 @@ Do not include credentials, access tokens, private source files, or personal dat
 
 ## Current security boundaries
 
-- Secrets are supplied through Replit Secrets and are not committed.
+- Secrets are supplied through Environment variables and are not committed.
 - Source checksums and retrieval timestamps are stored separately from extracted claims.
 - Demo mode uses fictional data and must not be treated as a production authorization boundary.
 - The current API scaffold uses a demo user identity for local judging. Production deployments must enforce Clerk session verification and ownership checks before exposing user records.

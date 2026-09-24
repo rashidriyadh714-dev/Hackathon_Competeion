@@ -2,10 +2,9 @@
 
 ## Before opening a change
 
-1. Read `replit.md` and the relevant documents in `docs/`.
+1. Read the relevant documents in `docs/`.
 2. Keep demo data clearly fictional.
 3. Preserve the source-grounding boundary: inferred values need review and evidence needs an explanation.
-4. Avoid adding a chatbot-first home screen, gradients, glow effects, or unlabelled AI claims.
 
 ## Development checks
 
