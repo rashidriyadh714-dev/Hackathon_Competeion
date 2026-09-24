@@ -1,0 +1,20 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: actionlayer-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: actionlayer
+      POSTGRES_PASSWORD: actionlayer_password
+      POSTGRES_DB: actionlayer_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - actionlayer_pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U actionlayer -d actionlayer_db"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+volumes:
+  actionlayer_pgdata:

@@ -1,0 +1,19 @@
+{
+  "short_name": "ActionLayer",
+  "name": "ActionLayer: Autonomous Opportunity Execution Agent",
+  "description": "Compiles real-world opportunity posters and syllabi into verifiable task DAGs with AI extraction, grounded claims, and readiness auditing.",
+  "icons": [
+    {
+      "src": "/assets/images/icon.png",
+      "type": "image/png",
+      "sizes": "192x192 512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#FAF8F5",
+  "theme_color": "#162B4D",
+  "display": "standalone",
+  "orientation": "portrait",
+  "categories": ["productivity", "education", "utilities"]
+}

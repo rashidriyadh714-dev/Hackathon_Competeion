@@ -2,23 +2,38 @@ import React from 'react';
 import { useColors } from '@/hooks/useColors';
 import { Feather } from '@expo/vector-icons';
 import { Tabs } from 'expo-router';
+import { StyleSheet, View } from 'react-native';
+import { BlurView } from 'expo-blur';
 
 export default function TabLayout() {
   const colors = useColors();
   return (
     <Tabs
+      sceneContainerStyle={{ backgroundColor: 'transparent' }}
       screenOptions={{
         headerShown: false,
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: colors.mutedForeground,
+        unmountOnBlur: true,
+        tabBarActiveTintColor: '#FFFFFF',
+        tabBarInactiveTintColor: 'rgba(255, 255, 255, 0.5)',
         tabBarStyle: {
           height: 84,
           paddingBottom: 26,
           paddingTop: 8,
-          backgroundColor: colors.card,
-          borderTopColor: colors.border,
+          backgroundColor: 'rgba(10, 14, 22, 0.72)',
+          borderTopColor: 'rgba(255, 255, 255, 0.14)',
           borderTopWidth: 1,
-        },
+          position: 'absolute',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          elevation: 0,
+          backdropFilter: 'blur(24px) saturate(180%)',
+        } as any,
+        tabBarBackground: () => (
+          <View style={StyleSheet.absoluteFill}>
+            <BlurView tint="dark" intensity={80} style={StyleSheet.absoluteFill} />
+          </View>
+        ),
         tabBarLabelStyle: { fontFamily: 'Inter_600SemiBold', fontSize: 10 },
       }}
     >

@@ -12,7 +12,10 @@
     },
     "android": {},
     "web": {
-      "favicon": "./assets/images/icon.png"
+      "favicon": "./assets/images/icon.png",
+      "display": "standalone",
+      "themeColor": "#000000",
+      "backgroundColor": "#000000"
     },
     "plugins": ["expo-router"],
     "experiments": {
