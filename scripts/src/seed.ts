@@ -33,14 +33,14 @@ async function seed() {
   if (!existingUser) {
     await db.insert(actionlayerUsers).values({
       id: DEMO_USER_ID,
-      email: "rashid.student@northstar.edu",
+      email: "rashid.student@globaltech.edu",
       displayName: "Rashid Riyadh",
       timezone: "Asia/Kuala_Lumpur",
       preferredLanguage: "en",
       studentStatus: "undergraduate",
-      institution: "Northstar University",
+      institution: "Global Tech University",
     });
-    console.log("✓ Created demo user:Rashid Riyadh (rashid.student@northstar.edu)");
+    console.log("✓ Created demo user:Rashid Riyadh (rashid.student@globaltech.edu)");
   }
 
   // Clean existing demo workflow records to allow clean re-seeding
@@ -382,7 +382,7 @@ async function seed() {
       taskId: taskMap["task-eligibility"],
       userId: DEMO_USER_ID,
       evidenceType: "user_declaration",
-      textValue: "Team roster confirmed: Alex Rivera (Lead), Maya Chen (Backend), Sam Patel (Frontend). All are active undergraduates at Northstar University.",
+      textValue: "Team roster confirmed: Rashid Riyadh (Lead), Maya Chen (Backend), Sam Patel (Frontend). All are active undergraduates at Global Tech University.",
       userExplanation: "Confirmed student IDs and active enrollment for all 3 team members.",
     })
     .returning();

@@ -1195,10 +1195,10 @@ router.get("/v1/profile", async (req, res, next) => {
       res.json({
         id: DEMO_USER_ID,
         displayName: "Rashid Riyadh",
-        email: "Rashid.student@northstar.edu",
+        email: "rashid.student@globaltech.edu",
         timezone: "Asia/Kuala_Lumpur",
         studentStatus: "undergraduate",
-        institution: "Northstar University",
+        institution: "Global Tech University",
       });
       return;
     }
