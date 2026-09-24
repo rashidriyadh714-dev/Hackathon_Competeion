@@ -44,21 +44,21 @@ graph TD
 ## 📸 Application Walkthrough & Workflow
 
 ### 1. The Workspace (Home Screen)
-![Home Screen](https://via.placeholder.com/800x400.png?text=Home+Screen+Screenshot)
+![Home Screen](./assets/home.png)
 * **What it does:** Your command center for every project. It provides a high-level overview of your active tasks, your overall progress, and urgent deadlines.
 * **The Vibe:** The "Liquid Glass" design language makes task management feel less like a chore and more like a premium, focused experience.
 
 ### 2. AI Capture (Universal Extraction Engine)
-![Capture Screen](https://via.placeholder.com/800x400.png?text=AI+Capture+Screenshot)
+![Capture Screen](./assets/capture.png)
 * **What it does:** The core magic of the app. Upload *any* project brief, rubric, or rulebook. The Gemini AI instantly breaks down the complex rules into bite-sized, actionable tasks. 
 * **Behind the scenes:** The Node.js backend processes the image, understands the context of the project, and structures the data perfectly for your roadmap.
 
 ### 3. The Roadmap (Task Management)
-![Roadmap Screen](https://via.placeholder.com/800x400.png?text=Task+Roadmap+Screenshot)
+![Roadmap Screen](./assets/roadmap.png)
 * **What it does:** Your newly generated tasks appear here. You can track priorities (High, Medium, Low) and see exactly what evidence (URLs, Images, Text) is required for each task before you can mark it complete.
 
 ### 4. ActionLayer PRO (RevenueCat Integration)
-![Paywall Screen](https://via.placeholder.com/800x400.png?text=RevenueCat+Paywall+Screenshot)
+![Paywall Screen](./assets/paywall.png)
 * **What it does:** Found in the Profile tab, the **ActionLayer PRO Paywall** allows power users to subscribe for unlimited AI extractions and advanced project management.
 * **Shipaton Integration:** This was built using the `react-native-purchases` SDK, seamlessly integrating RevenueCat's subscription infrastructure directly into the sleek glass UI.
 
