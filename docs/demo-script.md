@@ -84,7 +84,7 @@
 - In the bottom sheet, enter:
   - Artifact Label: `"https://github.com/actionlayer/actionlayer-mvp"`
   - Verification Explanation: `"Repository initialized with Apache-2.0 license, full README, and clean CI test suite."`
-  - Verification Method: Select **Level 2: Evidence Attached** (or Level 4 AI-Assisted Assessment).
+  - Verification Method: Select **Level 2: Evidence Attached** (or Level 3 AI-Assisted Assessment).
 - Tap **"Submit & Verify Artifact"**.
 
 ### Step 12: Inspect Verification Result

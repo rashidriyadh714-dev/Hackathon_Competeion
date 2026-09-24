@@ -75,5 +75,5 @@ Generic AI tools hallucinate dates and produce disjointed todo lists without gro
 ## 5. Honest Limitations
 
 1. **Local Single-User Execution:** Optimized for local judging in development mode.
-2. **AI-Assisted Assessment:** Level 4 verification is explicitly labeled as an AI rubric assessment and does not claim institutional accreditation.
+2. **AI-Assisted Assessment:** Level 3 verification is explicitly labeled as an AI rubric assessment and does not claim institutional accreditation.
 3. **Postponed Features:** URL scraping, external calendar integrations, voice-note transcription, and live payment processing are postponed to post-competition phases.

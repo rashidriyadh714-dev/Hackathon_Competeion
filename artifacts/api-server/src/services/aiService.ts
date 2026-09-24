@@ -525,7 +525,7 @@ RULES:
   }
 
   /**
-   * Evidence Evaluation (Level 4: AI-Assisted Assessment)
+   * Evidence Evaluation (Level 3: AI-Assisted Assessment)
    */
   public static async evaluateEvidence(options: {
     taskTitle: string;

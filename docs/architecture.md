@@ -80,8 +80,7 @@ ActionLayer is structured as a decoupled monorepo containing a mobile-first Prog
 - **Level 0 (No Evidence Required):** Simple administrative or trivial checklist tasks.
 - **Level 1 (User Declaration):** Explicit user self-confirmation with rationale recorded.
 - **Level 2 (Evidence Attached):** Verifiable file or URL artifact attached and stored.
-- **Level 3 (Deterministic Rule Validation):** Automated checks (e.g. valid license format, word counts).
-- **Level 4 (AI-Assisted Assessment):** Evaluated by Gemini against an explicit rubric. Must be labeled *"AI-assisted assessment"* and carries explicit limitation notices.
+- **Level 3 (AI-Assisted Assessment):** Evaluated by Gemini against an explicit rubric. Must be labeled *"AI-assisted assessment"* and carries explicit limitation notices.
 - **Level 5 (Postponed):** External institutional accreditation is strictly omitted until authoritative third-party APIs exist.
 
 ---

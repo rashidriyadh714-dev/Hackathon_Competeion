@@ -260,7 +260,7 @@ export default function AgentDetailScreen() {
                   Tap to upload Image or PDF
                 </Text>
                 <Text style={[ui.caption, { color: colors.mutedForeground, marginTop: 4 }]}>
-                  Required for Level 4 AI Verification
+                  Required for Level 3 AI Verification
                 </Text>
               </Pressable>
             )}
@@ -296,16 +296,16 @@ export default function AgentDetailScreen() {
               </Pressable>
 
               <Pressable
-                onPress={() => setEvidenceLevel(4)}
+                onPress={() => setEvidenceLevel(3)}
                 style={[
                   styles.levelOption,
                   {
-                    backgroundColor: evidenceLevel === 4 ? colors.secondary : colors.card,
-                    borderColor: evidenceLevel === 4 ? colors.primary : colors.border,
+                    backgroundColor: evidenceLevel === 3 ? colors.secondary : colors.card,
+                    borderColor: evidenceLevel === 3 ? colors.primary : colors.border,
                   },
                 ]}
               >
-                <Text style={[styles.levelTitle, { color: colors.foreground }]}>Level 4: AI-Assisted Assessment</Text>
+                <Text style={[styles.levelTitle, { color: colors.foreground }]}>Level 3: AI-Assisted Assessment</Text>
                 <Text style={[ui.caption, { color: colors.mutedForeground }]}>Gemini rubric evaluation</Text>
               </Pressable>
             </View>
@@ -971,7 +971,7 @@ function EvidenceTab({
     <View style={styles.section}>
       <SectionHeader title="Attached Evidence & Verifications" />
       <Text style={[ui.caption, { color: colors.mutedForeground }]}>
-        All evidence artifacts are stored with explicit verification levels (0 to 4). Level 4 is labeled &quot;AI-assisted assessment&quot; and does not claim institutional certification.
+        All evidence artifacts are stored with explicit verification levels (0 to 3). Level 3 is labeled &quot;AI-assisted assessment&quot; and does not claim institutional certification.
       </Text>
 
       {agent.tasks.map((task) => {

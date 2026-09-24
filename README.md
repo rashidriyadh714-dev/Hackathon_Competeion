@@ -31,7 +31,7 @@ Most AI productivity tools generate text that looks plausible but hallucinate de
 - **Source Grounding:** Every extracted claim remains linked to its exact excerpt and page in the preserved original document.
 - **Human Review Gates:** Uncertain dates, unstated timezones, or ambiguous terms are explicitly flagged for human confirmation before compiling into tasks.
 - **Deterministic DAG Scheduling:** Task dependencies, prerequisite blockers, and next-action calculations run in strict application logic—not unpredictable AI prompts.
-- **Multi-Level Evidence Verification:** Distinguishes self-declarations (Level 1) and attached artifacts (Level 2) from AI-assisted rubric assessments (Level 4), never pretending to be official institutional certification.
+- **Multi-Level Evidence Verification:** Distinguishes self-declarations (Level 1) and attached artifacts (Level 2) from AI-assisted rubric assessments (Level 3), never pretending to be official institutional certification.
 - **Four-Factor Readiness Auditing:** Separate transparency into requirements completion, evidence readiness, source trust, and deadline risk.
 
 ---
@@ -234,7 +234,7 @@ In accordance with competition rules, we state our current scope and limitations
 2. **Single-User Local Mode:**
    - The application runs in safe single-user development mode for local judging. Multi-tenant isolation is not claimed.
 3. **No External Verification Claims:**
-   - Level 4 verification is strictly labeled *"AI-assisted assessment"*. It does not guarantee external institutional accreditation.
+   - Level 3 verification is strictly labeled *"AI-assisted assessment"*. It does not guarantee external institutional accreditation.
 4. **Postponed Features:**
    - Live URL scraping, continuous background source monitoring, voice-note transcription, external calendar sync, and real payment billing are postponed until after the competition MVP.
 

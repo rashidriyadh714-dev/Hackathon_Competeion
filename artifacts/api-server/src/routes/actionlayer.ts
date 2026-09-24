@@ -999,7 +999,7 @@ router.post(
   },
 );
 
-// Run AI-Assisted Assessment on Evidence (Level 4)
+// Run AI-Assisted Assessment on Evidence (Level 3)
 router.post("/v1/evidence/:evidenceId/verify", async (req, res, next) => {
   try {
     const [evidence] = await db
@@ -1219,7 +1219,7 @@ router.get("/v1/entitlements", async (_req, res) => {
     features: [
       "Multimodal document extraction (Gemini Flash & Mock)",
       "Source-grounded Requirement Graph with DAG dependencies",
-      "Evidence verification up to Level 4",
+      "Evidence verification up to Level 3",
       "Full 4-factor readiness audit",
     ],
   });
