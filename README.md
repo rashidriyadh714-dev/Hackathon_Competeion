@@ -2,7 +2,7 @@
 
 > **Autonomous Opportunity Execution Agent**  
 > *Shipaton 2026 Next Gen Award Submission*  
-> *Built by Rashid Riyadh*  
+> *Built by Rashid Riyadh & Team*  
 > Licensed under Apache-2.0 · 100% Open Source · Locally Executable
 
 ---
@@ -21,7 +21,7 @@ Instead of generic chat summaries or disjointed todo lists, ActionLayer answers 
 
 - **Students & Early-Career Builders:** Navigating complex competition rules, hackathons, and fellowship applications with strict submission criteria, deadlines, and multi-step prerequisites.
 - **Independent Developers & Researchers:** Applying for open grants and submitting technical projects where missing a single deliverable (such as an open-source license or demo video length) leads to disqualification.
-- **Solo Applicants:** Managing overwhelming multi-page announcement posters and unstructured PDFs without missing fine-print requirements.
+- **Small Teams & Builders:** Managing overwhelming multi-page announcement posters and unstructured PDFs without missing fine-print requirements.
 
 ---
 

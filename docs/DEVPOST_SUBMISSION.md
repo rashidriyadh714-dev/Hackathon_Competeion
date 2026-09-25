@@ -76,7 +76,7 @@ graph TD
 
 ## 🎓 Next Gen Award Qualifications
 This project is officially submitted for the **Next Gen Award**.
-* **Student Creator:** Built by Rashid Riyadh, an active university student.
+* **Student Team:** Built by Rashid Riyadh and team, active university students.
 * **Open Source:** The entire codebase is public and licensed under Apache 2.0.
 * **Monetization:** Thoughtfully integrates RevenueCat for a "PRO" tier to support scalable API usage and server costs.
 

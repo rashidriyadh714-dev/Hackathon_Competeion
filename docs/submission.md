@@ -16,7 +16,7 @@
 ActionLayer compiles messy, unstructured real-world opportunity documents (such as competition posters, syllabi, and grant calls) into verifiable Directed Acyclic Graph (DAG) task trees with strict prerequisite blocking, multi-level evidence verification, and four-factor readiness audits.
 
 ### Who It Helps
-Students, early-career engineers, and solo applicants who struggle with complex multi-stage competition criteria, ambiguous deadlines, hidden prerequisites, and the anxiety of submitting incomplete applications.
+Students, early-career engineers, and small teams who struggle with complex multi-stage competition criteria, ambiguous deadlines, hidden prerequisites, and the anxiety of submitting incomplete applications.
 
 ### Why It Matters
 Generic AI tools hallucinate dates and produce disjointed todo lists without grounding. ActionLayer enforces cryptographic source preservation, human review gates, deterministic scheduling, and transparent readiness auditing where missing deliverables are caught before the deadline.
