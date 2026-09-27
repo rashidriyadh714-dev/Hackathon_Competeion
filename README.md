@@ -162,7 +162,7 @@ Users must explicitly accept the disclosure before transmission, or they may cho
 | --- | --- |
 | `pnpm run db:up` | Starts `actionlayer-postgres` container in Docker |
 | `pnpm run db:down` | Stops PostgreSQL container (preserves data volume) |
-| `pnpm run seed` | Seeds Northstar Build Challenge demo data into database |
+| `pnpm run seed` | Seeds fictional "Northstar Build Challenge" demo data into database |
 | `pnpm --filter @workspace/db run push` | Synchronizes Drizzle schema with PostgreSQL |
 | `docker exec actionlayer-postgres pg_dump -U actionlayer actionlayer_db > backup.sql` | Backs up database to SQL file |
 | `docker exec -i actionlayer-postgres psql -U actionlayer actionlayer_db < backup.sql` | Restores database from backup |

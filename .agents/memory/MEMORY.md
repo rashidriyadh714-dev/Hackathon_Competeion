@@ -1,1 +1,0 @@
-- [Expo build port isolation](expo-build-port.md) — the mockup preview owns Metro's usual 8081, so production mobile bundling uses an isolated configurable port.

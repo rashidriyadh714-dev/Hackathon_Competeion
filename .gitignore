@@ -53,6 +53,8 @@ Thumbs.db
 data/
 data/uploads/
 
-# Replit
+# Build caches
 .cache/
 .local/
+test-blur.js
+.agents/
