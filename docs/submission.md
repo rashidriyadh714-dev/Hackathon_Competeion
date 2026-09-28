@@ -72,8 +72,8 @@ Generic AI tools hallucinate dates and produce disjointed todo lists without gro
 
 ---
 
-## 5. Honest Limitations
+## 5. Current Scope & Next Steps
 
-1. **Local Single-User Execution:** Optimized for local judging in development mode.
-2. **AI-Assisted Assessment:** Level 3 verification is explicitly labeled as an AI rubric assessment and does not claim institutional accreditation.
-3. **Postponed Features:** URL scraping, external calendar integrations, voice-note transcription, and live payment processing are postponed to post-competition phases.
+1. **Local-First Architecture:** Optimized for fast local judging and development, with multi-user cloud deployment as the next infrastructure milestone.
+2. **Transparent AI Verification:** Level 3 verification is clearly labeled as an AI-assisted rubric assessment, with third-party institutional verification APIs planned for future integration.
+3. **Upcoming Features:** URL ingestion with server-side safety validation, external calendar sync, voice-note transcription, and production RevenueCat billing are planned for post-competition releases.

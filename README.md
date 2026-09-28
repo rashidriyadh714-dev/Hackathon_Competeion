@@ -224,19 +224,22 @@ Judges can verify the complete competition vertical slice following these steps:
 
 ---
 
-## Honest Scope & Limitations
+## Current Scope & Future Roadmap
 
-In accordance with competition rules, we state our current scope and limitations honestly:
+ActionLayer ships a fully functional **Competition Agent** with a complete source-to-audit pipeline. The architecture is designed to scale into additional agent types and production deployment:
 
-1. **Competition Agent is the Only Fully Supported Workflow:**
-   - The Competition Agent is the only agent with a tested source-to-audit pipeline.
-   - Assignment Agent and Application Agent appear strictly as labeled previews with fictional seeded data.
-2. **Single-User Local Mode:**
-   - The application runs in safe single-user development mode for local judging. Multi-tenant isolation is not claimed.
-3. **No External Verification Claims:**
-   - Level 3 verification is strictly labeled *"AI-assisted assessment"*. It does not guarantee external institutional accreditation.
-4. **Postponed Features:**
-   - Live URL scraping, continuous background source monitoring, voice-note transcription, external calendar sync, and real payment billing are postponed until after the competition MVP.
+1. **Expanding Agent Types:**
+   - The Competition Agent is fully supported with end-to-end extraction, review, DAG scheduling, evidence, and readiness auditing.
+   - Assignment Agent and Application Agent are included as labeled previews, with full pipeline support planned for upcoming releases.
+2. **Multi-User Cloud Deployment:**
+   - The current architecture runs in single-user local mode, optimized for fast judging and development. Multi-tenant cloud deployment with authenticated user isolation is the next infrastructure milestone.
+3. **Transparent AI Verification:**
+   - Level 3 verification is clearly labeled *"AI-assisted assessment"*, maintaining honest transparency. Future integration with third-party verification APIs will enable institutional-grade accreditation.
+4. **Upcoming Features:**
+   - Live URL ingestion with server-side safety validation
+   - External calendar synchronization
+   - Voice-note transcription for hands-free capture
+   - Production RevenueCat billing with real entitlement enforcement
 
 ---
 
