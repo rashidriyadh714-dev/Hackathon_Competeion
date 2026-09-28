@@ -457,11 +457,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         id: verificationId,
         status: 'verified',
         level,
-        method: level === 4 ? 'AI-assisted assessment' : level === 1 ? 'User declaration' : 'Attached artifact verification',
+        method: level === 3 ? 'AI-assisted assessment' : level === 1 ? 'User declaration' : 'Attached artifact verification',
         requirementsMet: ['Artifact submitted with required explanation', 'Satisfies stated requirement condition'],
         requirementsMissing: [],
         confidence: 0.95,
-        limitations: [level === 4 ? 'AI-assisted review; verify original repository' : 'User-submitted artifact'],
+        limitations: [level === 3 ? 'AI-assisted review; verify original repository' : 'User-submitted artifact'],
         createdAt: new Date().toISOString(),
       },
     };

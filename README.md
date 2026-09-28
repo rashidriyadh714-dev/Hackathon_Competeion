@@ -218,7 +218,7 @@ Judges can verify the complete competition vertical slice following these steps:
 9. **Complete Prerequisite:** Click *"Start Task"* then *"Mark Complete"* on the concept task.
 10. **Observe Automatic Unblocking:** Watch the repository task immediately transition from **Blocked** to **Ready**.
 11. **Attach Evidence:** Click *"Attach Evidence"*, enter repository URL, and select verification level.
-12. **Inspect Verification Result:** Open the **Evidence** tab to see Level 2/4 verification status, rubric checks, and limitations.
+12. **Inspect Verification Result:** Open the **Evidence** tab to see Level 2/3 verification status, rubric checks, and limitations.
 13. **Run Four-Factor Readiness Audit:** On the **Overview** tab, click *"Run Four-Factor Readiness Audit"*.
 14. **Inspect Missing Items:** Review the exact remaining missing items and deadline risk reasons.
 

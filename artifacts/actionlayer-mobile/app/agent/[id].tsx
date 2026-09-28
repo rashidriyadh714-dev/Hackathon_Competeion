@@ -58,7 +58,7 @@ export default function AgentDetailScreen() {
       });
       if (!result.canceled && result.assets && result.assets.length > 0) {
         setEvidenceFile(result.assets[0]);
-        setEvidenceLevel(4); // Default to AI verification if file attached
+        setEvidenceLevel(3); // Default to AI-assisted assessment if file attached
       }
     } catch (err) {
       console.warn('Failed to pick file:', err);
