@@ -12,7 +12,11 @@ export default function ReviewScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { agent, confirmClaim, editClaim, removeClaim, markClaimUnknown } = useApp();
-  
+
+  const [editing, setEditing] = useState<Claim | null>(null);
+  const [value, setValue] = useState('');
+  const [showPreviewModal, setShowPreviewModal] = useState(false);
+
   if (!agent) {
     return (
       <View style={[styles.root, { backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }]}>
@@ -20,10 +24,6 @@ export default function ReviewScreen() {
       </View>
     );
   }
-
-  const [editing, setEditing] = useState<Claim | null>(null);
-  const [value, setValue] = useState('');
-  const [showPreviewModal, setShowPreviewModal] = useState(false);
 
   const uncertain = agent.claims.filter(
     (claim) => !claim.reviewed

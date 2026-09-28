@@ -22,16 +22,8 @@ export default function AgentDetailScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { agent, startTask, completeTask, addEvidence, runAudit } = useApp();
+  const { agent, startTask, completeTask, addEvidence, runAudit, editTask: editTaskAction } = useApp();
   const [tab, setTab] = useState<'overview' | 'graph' | 'evidence' | 'sources'>('overview');
-
-  if (!agent) {
-    return (
-      <View style={[styles.root, { backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }]}>
-        <Text style={{ color: colors.foreground, fontFamily: 'Inter_600SemiBold' }}>Agent not found</Text>
-      </View>
-    );
-  }
   const [detailTask, setDetailTask] = useState<Task | null>(null);
   const [evidenceTask, setEvidenceTask] = useState<Task | null>(null);
   const [evidenceLabel, setEvidenceLabel] = useState('');
@@ -41,6 +33,17 @@ export default function AgentDetailScreen() {
   const [showAuditModal, setShowAuditModal] = useState(false);
   const [evidenceFile, setEvidenceFile] = useState<any>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [editTaskState, setEditTaskState] = useState<Task | null>(null);
+  const [editTaskTitle, setEditTaskTitle] = useState('');
+  const [editTaskDesc, setEditTaskDesc] = useState('');
+
+  if (!agent) {
+    return (
+      <View style={[styles.root, { backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }]}>
+        <Text style={{ color: colors.foreground, fontFamily: 'Inter_600SemiBold' }}>Agent not found</Text>
+      </View>
+    );
+  }
 
   const progress = getProgress(agent);
 
@@ -119,11 +122,6 @@ export default function AgentDetailScreen() {
       setIsUploading(false);
     }
   };
-
-  const [editTaskState, setEditTaskState] = useState<Task | null>(null);
-  const [editTaskTitle, setEditTaskTitle] = useState('');
-  const [editTaskDesc, setEditTaskDesc] = useState('');
-  const { editTask: editTaskAction } = useApp();
 
   const handleEditTaskSave = () => {
     if (editTaskState && editTaskTitle.trim()) {
