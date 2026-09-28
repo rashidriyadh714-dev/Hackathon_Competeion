@@ -24,15 +24,17 @@ export const ExtractedClaimSchema = z.object({
 export const ExtractedTaskSchema = z.object({
   title: z.string().min(3),
   description: z.string().min(5),
-  category: z.enum([
-    "Eligibility",
-    "Conflicts",
-    "Foundation",
-    "Proposal",
-    "Build",
-    "Presentation",
-    "Submission",
-  ]).default("Foundation"),
+  category: z
+    .enum([
+      "Eligibility",
+      "Conflicts",
+      "Foundation",
+      "Proposal",
+      "Build",
+      "Presentation",
+      "Submission",
+    ])
+    .default("Foundation"),
   priority: z.enum(["high", "medium", "low"]).default("medium"),
   estimatedMinutes: z.number().int().min(5).max(10000).default(30),
   dependencyTitles: z.array(z.string()).default([]),
@@ -44,7 +46,11 @@ export const ExtractedTaskSchema = z.object({
 });
 
 export const ExtractionResponseSchema = z.object({
-  documentType: z.string().describe("Classify the document in 1 to 3 words (e.g. Scholarship, Competition, Grant Application, Hackathon, Research Assignment)"),
+  documentType: z
+    .string()
+    .describe(
+      "Classify the document in 1 to 3 words (e.g. Scholarship, Competition, Grant Application, Hackathon, Research Assignment)",
+    ),
   classificationConfidence: z.number().min(0).max(1),
   title: z.string().min(1),
   organizer: z.string().default(""),
@@ -54,18 +60,20 @@ export const ExtractionResponseSchema = z.object({
   tasks: z.array(ExtractedTaskSchema).min(1),
   deadlineRisk: z.enum(["Low", "Medium", "High", "Critical"]).default("Medium"),
   reviewSummary: z.string().default(""),
-  coverageReport: z.object({
-    totalRequiredClaims: z.number().int(),
-    mappedToTasks: z.number().int(),
-    mappedToConditions: z.number().int(),
-    unmappedClaims: z.number().int(),
-    conflictingClaims: z.number().int(),
-    missingInformation: z.number().int(),
-    totalGraphTasks: z.number().int(),
-    totalDependencyEdges: z.number().int(),
-    isAcyclic: z.boolean(),
-    prerequisitesVisible: z.boolean()
-  }).optional(),
+  coverageReport: z
+    .object({
+      totalRequiredClaims: z.number().int(),
+      mappedToTasks: z.number().int(),
+      mappedToConditions: z.number().int(),
+      unmappedClaims: z.number().int(),
+      conflictingClaims: z.number().int(),
+      missingInformation: z.number().int(),
+      totalGraphTasks: z.number().int(),
+      totalDependencyEdges: z.number().int(),
+      isAcyclic: z.boolean(),
+      prerequisitesVisible: z.boolean(),
+    })
+    .optional(),
 });
 
 export type ExtractionResponse = z.infer<typeof ExtractionResponseSchema>;
@@ -414,11 +422,19 @@ RULES:
       throw new Error("Invalid source intake: content missing");
     }
 
-    const candidateModels = [model, "gemini-3.5-flash-lite", "gemini-3.5-flash"];
+    const candidateModels = [
+      model,
+      "gemini-3.5-flash-lite",
+      "gemini-3.5-flash",
+    ];
     let lastError: Error | null = null;
     let candidateText: string | null = null;
     let successfulModel = model;
-    let validationResult: { success: boolean; data?: ExtractionResponse; error?: any } = { success: false };
+    let validationResult: {
+      success: boolean;
+      data?: ExtractionResponse;
+      error?: any;
+    } = { success: false };
 
     for (let attempt = 0; attempt < candidateModels.length; attempt++) {
       const activeModel = candidateModels[attempt];
@@ -439,10 +455,14 @@ RULES:
 
         if (!response.ok) {
           const errText = await response.text();
-          lastError = new Error(`Gemini API error (HTTP ${response.status} for ${activeModel}): ${errText}`);
-          
+          lastError = new Error(
+            `Gemini API error (HTTP ${response.status} for ${activeModel}): ${errText}`,
+          );
+
           if (response.status === 429 && attempt < candidateModels.length - 1) {
-            console.warn(`[ActionLayer] 429 Rate Limit Hit. Waiting 15 seconds before retry ${attempt + 1}...`);
+            console.warn(
+              `[ActionLayer] 429 Rate Limit Hit. Waiting 15 seconds before retry ${attempt + 1}...`,
+            );
             await new Promise((r) => setTimeout(r, 15000));
             continue;
           }
@@ -450,8 +470,9 @@ RULES:
         }
 
         const responseJson: any = await response.json();
-        candidateText = responseJson?.candidates?.[0]?.content?.parts?.[0]?.text;
-        
+        candidateText =
+          responseJson?.candidates?.[0]?.content?.parts?.[0]?.text;
+
         if (candidateText) {
           let cleanJson = candidateText.trim();
           if (cleanJson.startsWith("```json")) cleanJson = cleanJson.slice(7);
@@ -461,13 +482,15 @@ RULES:
 
           const parsed = JSON.parse(cleanJson);
           const parseCheck = ExtractionResponseSchema.safeParse(parsed);
-          
+
           if (parseCheck.success) {
             // Validate DAG dependencies exist
-            const allTaskTitles = new Set(parseCheck.data.tasks.map((t) => t.title));
+            const allTaskTitles = new Set(
+              parseCheck.data.tasks.map((t) => t.title),
+            );
             let hasInvalidDependency = false;
             let invalidDepName = "";
-            
+
             for (const task of parseCheck.data.tasks) {
               for (const dep of task.dependencyTitles) {
                 if (!allTaskTitles.has(dep)) {
@@ -480,23 +503,34 @@ RULES:
             }
 
             if (hasInvalidDependency) {
-              console.warn(`[ActionLayer] Gemini generated invalid dependency: ${invalidDepName}. Forcing retry.`);
-              throw new Error(`Invalid dependency generated: ${invalidDepName} does not match any generated task title.`);
+              console.warn(
+                `[ActionLayer] Gemini generated invalid dependency: ${invalidDepName}. Forcing retry.`,
+              );
+              throw new Error(
+                `Invalid dependency generated: ${invalidDepName} does not match any generated task title.`,
+              );
             }
 
             validationResult = { success: true, data: parseCheck.data };
             successfulModel = activeModel;
             break; // Success, exit loop
           } else {
-            console.warn("[ActionLayer] Gemini schema parse warning:", parseCheck.error.message);
-            throw new Error(`Schema validation failed: ${parseCheck.error.message}`);
+            console.warn(
+              "[ActionLayer] Gemini schema parse warning:",
+              parseCheck.error.message,
+            );
+            throw new Error(
+              `Schema validation failed: ${parseCheck.error.message}`,
+            );
           }
         }
       } catch (err: any) {
         lastError = err;
         // Retry logic for schema failures
         if (attempt < candidateModels.length - 1) {
-          console.warn(`[ActionLayer] Attempt ${attempt + 1} failed with error: ${err.message}. Retrying immediately with next model...`);
+          console.warn(
+            `[ActionLayer] Attempt ${attempt + 1} failed with error: ${err.message}. Retrying immediately with next model...`,
+          );
           continue;
         }
         break; // Max attempts reached
@@ -521,7 +555,9 @@ RULES:
       };
     }
 
-    throw lastError || new Error("Failed to extract information from AI provider.");
+    throw (
+      lastError || new Error("Failed to extract information from AI provider.")
+    );
   }
 
   /**
@@ -617,7 +653,11 @@ Output strictly JSON matching:
       contents.push({ role: "user", parts: [{ text: prompt }] });
     }
 
-    const candidateModels = [model, "gemini-3.5-flash-lite", "gemini-3.5-flash"];
+    const candidateModels = [
+      model,
+      "gemini-3.5-flash-lite",
+      "gemini-3.5-flash",
+    ];
     let lastError: Error | null = null;
     let candidateText: string | null = null;
     let successfulModel = model;
@@ -641,10 +681,14 @@ Output strictly JSON matching:
 
         if (!response.ok) {
           const errText = await response.text();
-          lastError = new Error(`Gemini API error (HTTP ${response.status} for ${activeModel}): ${errText}`);
-          
+          lastError = new Error(
+            `Gemini API error (HTTP ${response.status} for ${activeModel}): ${errText}`,
+          );
+
           if (response.status === 429 && attempt < candidateModels.length - 1) {
-            console.warn(`[ActionLayer Evidence] 429 Rate Limit Hit. Waiting 15 seconds before retry ${attempt + 1}...`);
+            console.warn(
+              `[ActionLayer Evidence] 429 Rate Limit Hit. Waiting 15 seconds before retry ${attempt + 1}...`,
+            );
             await new Promise((r) => setTimeout(r, 15000));
             continue;
           }
@@ -652,7 +696,8 @@ Output strictly JSON matching:
         }
 
         const jsonResponse: any = await response.json();
-        candidateText = jsonResponse?.candidates?.[0]?.content?.parts?.[0]?.text;
+        candidateText =
+          jsonResponse?.candidates?.[0]?.content?.parts?.[0]?.text;
         if (candidateText) {
           successfulModel = activeModel;
           break;
@@ -673,7 +718,7 @@ Output strictly JSON matching:
       if (clean.startsWith("```")) clean = clean.slice(3);
       if (clean.endsWith("```")) clean = clean.slice(0, -3);
       clean = clean.trim();
-      
+
       try {
         const parsed = JSON.parse(clean);
         const validated = VerificationResultSchema.safeParse(parsed);
@@ -692,7 +737,10 @@ Output strictly JSON matching:
         throw new Error("Failed to parse verification result: " + e.message);
       }
     } else {
-      throw new Error("Failed to evaluate evidence from AI provider: " + (lastError?.message || "No text returned"));
+      throw new Error(
+        "Failed to evaluate evidence from AI provider: " +
+          (lastError?.message || "No text returned"),
+      );
     }
   }
 }

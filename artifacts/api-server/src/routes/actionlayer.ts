@@ -453,55 +453,55 @@ router.post("/v1/extractions/:jobId/confirm", async (req, res, next) => {
     const mockTasks = AiService.isMockProvider()
       ? getMockCompetitionExtraction().tasks
       : [
-        {
-          title: "Confirm eligibility requirements",
-          description:
-            "Review competition rules and verify individual and team criteria.",
-          category: "Eligibility",
-          priority: "high" as const,
-          estimatedMinutes: 20,
-          dependencyTitles: [],
-          evidenceRequired: true,
-          evidenceType: "user_declaration" as const,
-          completionCondition: "Eligibility confirmed per criteria",
-        },
-        {
-          title: "Define problem and project scope",
-          description:
-            "Clarify problem statement and outline core deliverable scope.",
-          category: "Plan",
-          priority: "high" as const,
-          estimatedMinutes: 45,
-          dependencyTitles: [],
-          evidenceRequired: true,
-          evidenceType: "text" as const,
-          completionCondition: "Problem statement documented",
-        },
-        {
-          title: "Build and verify submission deliverable",
-          description:
-            "Construct required deliverable and prepare verification artifacts.",
-          category: "Build",
-          priority: "high" as const,
-          estimatedMinutes: 120,
-          dependencyTitles: ["Define problem and project scope"],
-          evidenceRequired: true,
-          evidenceType: "url" as const,
-          completionCondition: "Deliverable verified per rubric",
-        },
-        {
-          title: "Final submission and audit",
-          description:
-            "Review readiness audit and submit all verified materials.",
-          category: "Final review",
-          priority: "high" as const,
-          estimatedMinutes: 30,
-          dependencyTitles: ["Build and verify submission deliverable"],
-          evidenceRequired: true,
-          evidenceType: "image" as const,
-          completionCondition: "Final confirmation received",
-        },
-      ];
+          {
+            title: "Confirm eligibility requirements",
+            description:
+              "Review competition rules and verify individual and team criteria.",
+            category: "Eligibility",
+            priority: "high" as const,
+            estimatedMinutes: 20,
+            dependencyTitles: [],
+            evidenceRequired: true,
+            evidenceType: "user_declaration" as const,
+            completionCondition: "Eligibility confirmed per criteria",
+          },
+          {
+            title: "Define problem and project scope",
+            description:
+              "Clarify problem statement and outline core deliverable scope.",
+            category: "Plan",
+            priority: "high" as const,
+            estimatedMinutes: 45,
+            dependencyTitles: [],
+            evidenceRequired: true,
+            evidenceType: "text" as const,
+            completionCondition: "Problem statement documented",
+          },
+          {
+            title: "Build and verify submission deliverable",
+            description:
+              "Construct required deliverable and prepare verification artifacts.",
+            category: "Build",
+            priority: "high" as const,
+            estimatedMinutes: 120,
+            dependencyTitles: ["Define problem and project scope"],
+            evidenceRequired: true,
+            evidenceType: "url" as const,
+            completionCondition: "Deliverable verified per rubric",
+          },
+          {
+            title: "Final submission and audit",
+            description:
+              "Review readiness audit and submit all verified materials.",
+            category: "Final review",
+            priority: "high" as const,
+            estimatedMinutes: 30,
+            dependencyTitles: ["Build and verify submission deliverable"],
+            evidenceRequired: true,
+            evidenceType: "image" as const,
+            completionCondition: "Final confirmation received",
+          },
+        ];
 
     const taskMap: Record<string, string> = {};
     for (let i = 0; i < mockTasks.length; i++) {
@@ -713,9 +713,9 @@ router.get("/v1/agents/:agentId/tasks", async (req, res, next) => {
         waitingOn: unsatisfiedPrereqs,
         evidence: taskEvidence
           ? {
-            ...taskEvidence,
-            verification: taskVerification,
-          }
+              ...taskEvidence,
+              verification: taskVerification,
+            }
           : null,
       };
     });
@@ -945,7 +945,8 @@ router.post(
       // 2. AI-Assisted Assessment
       const evaluation = await AiService.evaluateEvidence({
         taskTitle: task.title,
-        requirement: (task.completionConditionJson as any)?.condition || task.title,
+        requirement:
+          (task.completionConditionJson as any)?.condition || task.title,
         evidenceType,
         evidenceText: textValue,
         userExplanation,
@@ -964,7 +965,8 @@ router.post(
           requirementsMetJson: evaluation.result.requirementsMet,
           requirementsMissingJson: evaluation.result.requirementsMissing,
           limitationsJson: evaluation.result.limitations,
-          recommendedCorrection: evaluation.result.recommendedCorrection || null,
+          recommendedCorrection:
+            evaluation.result.recommendedCorrection || null,
           nextAction: evaluation.result.nextAction,
           provider: evaluation.provider,
           modelVersion: evaluation.modelVersion,
