@@ -7,7 +7,7 @@ ActionLayer is structured as a decoupled monorepo containing a mobile-first Prog
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                    Mobile-First PWA                     │
-│         (Expo Router / React 18 / Tailwind CSS)        │
+│         (Expo Router / React 18 / Custom CSS)           │
 └────────────────────────────┬────────────────────────────┘
                              │ HTTP REST v1
                              ▼
@@ -69,7 +69,7 @@ ActionLayer is structured as a decoupled monorepo containing a mobile-first Prog
    - `ready`: All required prerequisites have achieved `completed_by_user` or `verified` status.
    - `in_progress`: Task is actively being worked on.
    - `completed_by_user`: Self-declaration of completion recorded.
-   - `verified`: Satisfied with attached Level 1–4 evidence.
+   - `verified`: Satisfied with attached Level 1–3 evidence.
 4. **Automatic Unblocking:**
    - When an upstream prerequisite transitions to `completed_by_user` or `verified`, downstream tasks automatically recalculate and transition from `blocked` to `ready`.
 
@@ -81,7 +81,8 @@ ActionLayer is structured as a decoupled monorepo containing a mobile-first Prog
 - **Level 1 (User Declaration):** Explicit user self-confirmation with rationale recorded.
 - **Level 2 (Evidence Attached):** Verifiable file or URL artifact attached and stored.
 - **Level 3 (AI-Assisted Assessment):** Evaluated by Gemini against an explicit rubric. Must be labeled *"AI-assisted assessment"* and carries explicit limitation notices.
-- **Level 5 (Postponed):** External institutional accreditation is strictly omitted until authoritative third-party APIs exist.
+
+External institutional accreditation (e.g., third-party verification APIs) is intentionally omitted and is not represented as a verification level.
 
 ---
 

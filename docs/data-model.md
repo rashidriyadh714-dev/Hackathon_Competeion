@@ -169,7 +169,7 @@ ActionLayer models the complete opportunity compilation pipeline in PostgreSQL u
 - `evidence_id` (foreign key -> `actionlayer_evidence.id`)
 - `task_id` (foreign key -> `actionlayer_tasks.id`)
 - `status` (text: 'partially_verified', 'verified', 'needs_correction')
-- `level` (integer: 0 to 4)
+- `level` (integer: 0 to 3)
 - `method` (text: 'User-confirmed completion', 'Evidence attachment', 'Deterministic rule', 'AI-assisted assessment')
 - `requirements_met_json` (text)
 - `requirements_missing_json` (text)

@@ -176,7 +176,7 @@ export const actionlayerEvidence = pgTable("actionlayer_evidence", {
 export const actionlayerVerifications = pgTable("actionlayer_verifications", {
   id: uuid("id").defaultRandom().primaryKey(),
   evidenceId: uuid("evidence_id").notNull(),
-  verificationLevel: integer("verification_level").notNull(), // 0 to 4
+  verificationLevel: integer("verification_level").notNull(), // 0 to 3
   status: text("status").notNull(), // 'partially_verified' | 'verified' | 'needs_correction'
   confidence: real("confidence"),
   method: text("method").notNull(), // 'User-confirmed completion' | 'Evidence attachment' | 'Rule validation' | 'AI-assisted assessment'

@@ -27,7 +27,7 @@ Generic AI tools hallucinate dates and produce disjointed todo lists without gro
 3. **Extraction Review:** Grounded claims link to exact document excerpts. Users edit uncertain items, confirm facts, or mark fields unknown.
 4. **Agent Activation & DAG Solver:** Compiles requirements into a 7-task DAG with 6 dependencies. Tasks remain blocked until prerequisites finish.
 5. **Automatic Unblocking:** Completing an upstream task automatically unblocks downstream requirements.
-6. **Multi-Level Evidence Verification:** Artifacts are verified at Levels 0 to 4 (including AI-assisted rubric assessment).
+6. **Multi-Level Evidence Verification:** Artifacts are verified at Levels 0 to 3 (including AI-assisted rubric assessment).
 7. **Four-Factor Readiness Audit:** Separate transparency into Requirements Completion, Evidence Readiness, Source Confidence, and Deadline Risk.
 
 ---

@@ -56,14 +56,14 @@ Most AI productivity tools generate text that looks plausible but hallucinate de
 3. **Extraction Review:** Grounded claims are reviewed by the user. Users can edit values, confirm trusted facts, mark details unknown, or remove ungrounded fields.
 4. **Agent Activation & DAG Compilation:** Compiles confirmed requirements into a Directed Acyclic Graph. Downstream tasks (e.g., repository setup) remain blocked until upstream prerequisites (e.g., architecture concept) are satisfied.
 5. **Automatic Unblocking:** Completing a prerequisite immediately transitions dependent tasks from `blocked` to `ready`.
-6. **Evidence Attachment (Levels 0–4):** Attach proof of completion evaluated against explicit criteria.
+6. **Evidence Attachment (Levels 0–3):** Attach proof of completion evaluated against explicit criteria.
 7. **Four-Factor Readiness Audit:** Evaluates requirements completion, evidence readiness, source confidence, and deadline risk, displaying exact missing items before submission.
 
 ---
 
 ## Technology Stack
 
-- **Frontend:** React 18, Expo Router mobile-first PWA, TypeScript, Tailwind CSS, Lucide / Feather icons, Radix UI accessibility primitives.
+- **Frontend:** React 18, Expo Router mobile-first PWA, TypeScript, custom "Liquid Glass" CSS, Lucide / Feather icons, Radix UI accessibility primitives.
 - **Backend:** Express 5 REST API running on port 5001 with modular services for AI extraction, DAG dependency resolution, and secure file storage.
 - **Database:** PostgreSQL 16 running locally via Docker, managed through Drizzle ORM with full relational schema.
 - **AI Systems:** Google Gemini Developer API (Free Tier) server-side integration with configurable model (`gemini-2.5-flash`), Zod schema constraints, and deterministic `MockAiProvider`.
