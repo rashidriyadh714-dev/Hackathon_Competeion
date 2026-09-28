@@ -183,7 +183,7 @@ export function getMockCompetitionExtraction(): ExtractionResponse {
         title: "Define problem statement and concept",
         description:
           "Write a clear one-paragraph problem statement and agree on the student life solution concept.",
-        category: "Plan",
+        category: "Foundation",
         priority: "high",
         estimatedMinutes: 45,
         dependencyTitles: [],
@@ -248,7 +248,7 @@ export function getMockCompetitionExtraction(): ExtractionResponse {
         title: "Complete final submission audit and submit",
         description:
           "Perform final readiness audit, verify all deliverables, and submit on competition portal.",
-        category: "Final review",
+        category: "Submission",
         priority: "high",
         estimatedMinutes: 20,
         dependencyTitles: [

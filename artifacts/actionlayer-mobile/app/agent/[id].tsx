@@ -36,7 +36,7 @@ export default function AgentDetailScreen() {
   const [evidenceTask, setEvidenceTask] = useState<Task | null>(null);
   const [evidenceLabel, setEvidenceLabel] = useState('');
   const [evidenceExplanation, setEvidenceExplanation] = useState('');
-  const [evidenceLevel, setEvidenceLevel] = useState<1 | 2 | 4>(2);
+  const [evidenceLevel, setEvidenceLevel] = useState<1 | 2 | 3>(2);
   const [auditResult, setAuditResult] = useState<ReadinessAuditResult | null>(null);
   const [showAuditModal, setShowAuditModal] = useState(false);
   const [evidenceFile, setEvidenceFile] = useState<any>(null);
@@ -106,7 +106,7 @@ export default function AgentDetailScreen() {
       if (!res.ok) throw new Error('Upload failed');
       const { verification } = await res.json();
       
-      addEvidence(evidenceTask.id, evidenceLabel || evidenceFile.name, evidenceExplanation, verification.verificationLevel, verification);
+      addEvidence(evidenceTask.id, evidenceLabel || evidenceFile.name, evidenceExplanation, (verification.verificationLevel ?? 3) as (1 | 2 | 3), verification);
 
       setEvidenceFile(null);
       setEvidenceLabel('');
@@ -1312,4 +1312,22 @@ const styles = StyleSheet.create({
   detailDepBox: { padding: 12, borderRadius: 12, gap: 8, backgroundColor: 'rgba(255, 255, 255, 0.06)', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.12)' },
   detailDepRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   detailActions: { gap: 10, marginTop: 8 },
+  filePreview: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: 12,
+    borderRadius: 12,
+    borderWidth: 1,
+    gap: 10,
+    marginTop: 6,
+  },
+  uploadBox: {
+    borderWidth: 1,
+    borderStyle: 'dashed',
+    borderRadius: 12,
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 6,
+  },
 });

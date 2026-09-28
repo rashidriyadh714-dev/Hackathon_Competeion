@@ -9,10 +9,8 @@ export default function TabLayout() {
   const colors = useColors();
   return (
     <Tabs
-      sceneContainerStyle={{ backgroundColor: 'transparent' }}
       screenOptions={{
         headerShown: false,
-        unmountOnBlur: true,
         tabBarActiveTintColor: '#FFFFFF',
         tabBarInactiveTintColor: 'rgba(255, 255, 255, 0.5)',
         tabBarStyle: {

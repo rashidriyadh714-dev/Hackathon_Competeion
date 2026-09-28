@@ -7,7 +7,7 @@ ActionLayer is structured as a decoupled monorepo containing a mobile-first Prog
 ```
 ┌─────────────────────────────────────────────────────────┐
 │                    Mobile-First PWA                     │
-│         (Expo Router / React 18 / Custom CSS)           │
+│         (Expo Router / React 19 / Custom CSS)           │
 └────────────────────────────┬────────────────────────────┘
                              │ HTTP REST v1
                              ▼
@@ -80,7 +80,7 @@ ActionLayer is structured as a decoupled monorepo containing a mobile-first Prog
 - **Level 0 (No Evidence Required):** Simple administrative or trivial checklist tasks.
 - **Level 1 (User Declaration):** Explicit user self-confirmation with rationale recorded.
 - **Level 2 (Evidence Attached):** Verifiable file or URL artifact attached and stored.
-- **Level 3 (AI-Assisted Assessment):** Evaluated by Gemini against an explicit rubric. Must be labeled *"AI-assisted assessment"* and carries explicit limitation notices.
+- **Level 3 (AI-Assisted Assessment):** Evaluated by Gemini against an explicit rubric. Must be labeled *"AI-assisted assessment"* with transparent evaluation scope.
 
 External institutional accreditation (e.g., third-party verification APIs) is intentionally omitted and is not represented as a verification level.
 

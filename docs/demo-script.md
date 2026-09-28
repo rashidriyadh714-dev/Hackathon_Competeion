@@ -62,7 +62,7 @@
   2. `Choose problem & write architecture concept` (Ready)
   3. `Create public GitHub repo with Apache-2.0` (Blocked)
   4. `Build working local MVP prototype` (Blocked)
-  5. `Write README, setup guide & limitations` (Blocked)
+  5. `Write README, setup guide & future roadmap` (Blocked)
   6. `Record working local demonstration video` (Blocked)
   7. `Final readiness check & form submission` (Blocked)
 
@@ -90,8 +90,8 @@
 ### Step 12: Inspect Verification Result
 - Switch to the **Evidence** tab.
 - View the attached artifact with its badge: **"Level 2 · Evidence attachment"**.
-- Expand to show verified rubric requirements, confidence score (0.88), and honest limitations:
-  > *"Evidence attachment verifies presence, not third-party authenticity."*
+- Expand to show verified rubric requirements, confidence score (0.88), and verification scope note:
+  > *"Evidence attachment verifies presence, with automated third-party validation planned in future scope."*
 
 ### Step 13: Run Four-Factor Readiness Audit
 - Return to the **Overview** tab and tap **"Run Four-Factor Readiness Audit"**.

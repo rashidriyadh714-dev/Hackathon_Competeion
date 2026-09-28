@@ -16,7 +16,7 @@ pnpm --filter @workspace/actionlayer-mobile run typecheck
 - Extraction review distinguishes confirmed, inferred, and missing claims.
 - Confirming a claim updates activity and persists locally.
 - Starting/completing tasks respects dependencies.
-- Evidence creates a partial verification record with limitations.
+- Evidence creates a partial verification record with evaluation scope.
 - Audit reports ready, missing, blocked, uncertain, and next action.
 - Offline mode remains usable and data survives a reload.
 - Clerk sign-in appears when the publishable key is available.

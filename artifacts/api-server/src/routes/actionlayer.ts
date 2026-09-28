@@ -945,7 +945,7 @@ router.post(
       // 2. AI-Assisted Assessment
       const evaluation = await AiService.evaluateEvidence({
         taskTitle: task.title,
-        requirement: task.completionCondition,
+        requirement: (task.completionConditionJson as any)?.condition || task.title,
         evidenceType,
         evidenceText: textValue,
         userExplanation,

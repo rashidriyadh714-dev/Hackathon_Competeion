@@ -43,7 +43,7 @@ Generic AI tools hallucinate dates and produce disjointed todo lists without gro
 | Complete local installation instructions | Verified | Step-by-step setup in `README.md` and Docker Compose |
 | Clear explanation (What, Who, Why, How) | Verified | Section 1 above and `README.md` |
 | Screenshots & architecture documentation | Verified | `docs/architecture.md`, `docs/data-model.md` |
-| Honest limitations & privacy disclosures | Verified | `docs/privacy.md`, `SECURITY.md`, `README.md` |
+| Transparent scope, privacy disclosures & safety boundaries | Verified | `docs/privacy.md`, `SECURITY.md`, `README.md` |
 
 ---
 

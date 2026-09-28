@@ -14,7 +14,7 @@
 | --- | --- | --- |
 | Source upload contains sensitive material | Privacy breach | Private source model, checksums, deletion state, no raw source logging |
 | Extraction invents a requirement | Missed or invalid submission | Source excerpts, confidence, missing status, human review gate |
-| User accepts incorrect evidence | False readiness | Verification method, level, limitations, and next action are stored separately |
+| User accepts incorrect evidence | False readiness | Verification method, level, evaluation scope, and next action are stored separately |
 | Cross-user record access | Data disclosure | Clerk identity plus ownership predicates required on every production query |
 | Stale deadline | Late submission | Retrieval timestamp, deadline confidence, audit history, readiness risk |
 | Offline device loss | Progress loss | Server sync contract; local cache is treated as a convenience, not the source of truth |

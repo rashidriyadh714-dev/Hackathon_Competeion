@@ -6,7 +6,7 @@ ActionLayer may handle account identity, uploaded source metadata, source checks
 
 ## User control
 
-Users can review extracted claims before a workflow is created, edit or confirm uncertain values, attach explanations to evidence, inspect verification limitations, and delete uploaded sources. The profile surface exposes export and source-management entry points.
+Users can review extracted claims before a workflow is created, edit or confirm uncertain values, attach explanations to evidence, inspect verification evaluation scope, and delete uploaded sources. The profile surface exposes export and source-management entry points.
 
 ## Processing rules
 
