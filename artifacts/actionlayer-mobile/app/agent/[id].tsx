@@ -39,8 +39,12 @@ export default function AgentDetailScreen() {
 
   if (!agent) {
     return (
-      <View style={[styles.root, { backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }]}>
-        <Text style={{ color: colors.foreground, fontFamily: 'Inter_600SemiBold' }}>Agent not found</Text>
+      <View style={[styles.root, { backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', padding: 24 }]}>
+        <Text style={{ color: colors.foreground, fontFamily: 'Inter_600SemiBold', fontSize: 16, marginBottom: 12 }}>Agent not found</Text>
+        <Pressable onPress={() => router.replace('/(tabs)/agents')} style={[styles.back, { marginTop: 8 }]}>
+          <Feather name="arrow-left" size={18} color={colors.primary} />
+          <Text style={[ui.captionStrong, { color: colors.primary }]}>Return to Workflows</Text>
+        </Pressable>
       </View>
     );
   }
@@ -136,7 +140,17 @@ export default function AgentDetailScreen() {
         contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: 110 }]}
         showsVerticalScrollIndicator={false}
       >
-        <Pressable accessibilityLabel="Go back to agents" onPress={() => router.push('/(tabs)/agents')} style={styles.back}>
+        <Pressable 
+          accessibilityLabel="Go back to agents" 
+          onPress={() => {
+            if (router.canGoBack()) {
+              router.back();
+            } else {
+              router.replace('/(tabs)/agents');
+            }
+          }} 
+          style={styles.back}
+        >
           <Feather name="arrow-left" size={21} color={colors.foreground} />
           <Text style={[ui.captionStrong, { color: colors.foreground }]}>Workflows</Text>
         </Pressable>

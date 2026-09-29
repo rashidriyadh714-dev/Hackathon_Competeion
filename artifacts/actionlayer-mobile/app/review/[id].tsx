@@ -19,8 +19,12 @@ export default function ReviewScreen() {
 
   if (!agent) {
     return (
-      <View style={[styles.root, { backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center' }]}>
-        <Text style={{ color: colors.foreground, fontFamily: 'Inter_600SemiBold' }}>Agent not found</Text>
+      <View style={[styles.root, { backgroundColor: colors.background, alignItems: 'center', justifyContent: 'center', padding: 24 }]}>
+        <Text style={{ color: colors.foreground, fontFamily: 'Inter_600SemiBold', fontSize: 16, marginBottom: 12 }}>Agent not found</Text>
+        <Pressable onPress={() => router.replace('/(tabs)/capture')} style={[styles.back, { marginTop: 8 }]}>
+          <Feather name="arrow-left" size={18} color={colors.primary} />
+          <Text style={[ui.captionStrong, { color: colors.primary }]}>Return to Capture</Text>
+        </Pressable>
       </View>
     );
   }
@@ -82,10 +86,18 @@ export default function ReviewScreen() {
     { title: 'Required Deliverables', filter: (c: Claim) => c.field.toLowerCase().includes('deliverable') || c.field.toLowerCase().includes('repo') || c.field.toLowerCase().includes('video') },
   ];
 
+  const handleBack = () => {
+    if (router.canGoBack()) {
+      router.back();
+    } else {
+      router.replace('/(tabs)/capture');
+    }
+  };
+
   return (
     <View style={[styles.root, { backgroundColor: colors.background }]}>
       <ScrollView contentContainerStyle={[styles.content, { paddingTop: insets.top + 12, paddingBottom: 110 }]}>
-        <Pressable accessibilityLabel="Back to Capture" onPress={() => router.back()} style={styles.back}>
+        <Pressable accessibilityLabel="Back to Capture" onPress={handleBack} style={styles.back}>
           <Feather name="arrow-left" size={21} color={colors.foreground} />
           <Text style={[ui.captionStrong, { color: colors.foreground }]}>Capture</Text>
         </Pressable>
