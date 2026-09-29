@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Modal, Pressable, ScrollView, StyleSheet, Text, View, Platform, ActivityIndicator } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as DocumentPicker from 'expo-document-picker';
@@ -22,7 +22,8 @@ export default function AgentDetailScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { agent, startTask, completeTask, addEvidence, runAudit, editTask: editTaskAction } = useApp();
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { agents, activeAgentId, switchAgent, startTask, completeTask, addEvidence, runAudit, editTask: editTaskAction } = useApp();
   const [tab, setTab] = useState<'overview' | 'graph' | 'evidence' | 'sources'>('overview');
   const [detailTask, setDetailTask] = useState<Task | null>(null);
   const [evidenceTask, setEvidenceTask] = useState<Task | null>(null);
@@ -36,6 +37,20 @@ export default function AgentDetailScreen() {
   const [editTaskState, setEditTaskState] = useState<Task | null>(null);
   const [editTaskTitle, setEditTaskTitle] = useState('');
   const [editTaskDesc, setEditTaskDesc] = useState('');
+
+  const agent = useMemo(() => {
+    if (id) {
+      const found = agents.find((a) => a.id === id);
+      if (found) return found;
+    }
+    return agents.find((a) => a.id === activeAgentId) || agents[0];
+  }, [agents, id, activeAgentId]);
+
+  useEffect(() => {
+    if (agent && agent.id !== activeAgentId) {
+      switchAgent(agent.id);
+    }
+  }, [agent?.id, activeAgentId]);
 
   if (!agent) {
     return (
@@ -638,8 +653,11 @@ function OverviewTab({
       <View style={styles.overviewHeader}>
         <View>
           <Text style={[ui.caption, { color: colors.mutedForeground }]}>Target Submission Deadline</Text>
-          <Text style={[styles.deadline, { color: colors.foreground }]}>{formattedDate}</Text>
-          <Text style={[ui.caption, { color: colors.warning }]}>{formattedTime} · {daysRemaining} days remaining</Text>
+          <Text style={[styles.deadline, { color: colors.foreground }]}>{agent.deadlineNote || formattedDate}</Text>
+          <Text style={[ui.caption, { color: colors.warning }]}>
+            {daysRemaining > 0 ? `${daysRemaining} days remaining` : 'Deadline reached'}
+            {formattedDate !== 'Unknown Date' && formattedDate !== agent.deadlineNote ? ` · Target: ${formattedDate}` : ''}
+          </Text>
         </View>
         <View style={[styles.countdown, { backgroundColor: colors.secondary }]}>
           <Text style={[styles.countdownNumber, { color: colors.primary }]}>{daysRemaining}</Text>

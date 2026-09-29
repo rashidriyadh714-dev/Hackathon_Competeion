@@ -144,7 +144,7 @@ type AppContextValue = {
 };
 
 const AppContext = createContext<AppContextValue | null>(null);
-const STORAGE_KEY = 'actionlayer-state-v5';
+const STORAGE_KEY = 'actionlayer-state-v6';
 const WALLPAPER_KEY = 'actionlayer-wallpaper-v2';
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
@@ -180,17 +180,19 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     [agents, activeAgentId]
   );
 
-  // Hydrate from local storage
+  // Hydrate from local storage and sync with backend database
   useEffect(() => {
     async function loadData() {
+      let loadedAgents: Agent[] = [];
+      let savedActiveId: string | null = null;
       try {
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
         if (raw) {
           const parsed = JSON.parse(raw);
-          if (parsed.agents && Array.isArray(parsed.agents)) {
-            setAgents(parsed.agents);
-            setActiveAgentId(parsed.activeAgentId || null);
-            setActivities(parsed.activities || initialActivities);
+          if (parsed.agents && Array.isArray(parsed.agents) && parsed.agents.length > 0) {
+            loadedAgents = parsed.agents;
+            savedActiveId = parsed.activeAgentId || null;
+            if (parsed.activities) setActivities(parsed.activities);
           }
         }
         const wpRaw = await AsyncStorage.getItem(WALLPAPER_KEY);
@@ -198,6 +200,78 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           const wp = JSON.parse(wpRaw);
           if (wp.customBg !== undefined) setCustomBgState(wp.customBg);
           if (wp.bgDim !== undefined) setBgDimState(wp.bgDim);
+        }
+
+        // Fetch real agents from API database if local state is empty or needs refresh
+        try {
+          const res = await fetch('http://localhost:5001/api/v1/agents');
+          if (res.ok) {
+            const apiData = await res.json();
+            if (apiData.items && Array.isArray(apiData.items) && apiData.items.length > 0) {
+              for (const item of apiData.items) {
+                const existingIdx = loadedAgents.findIndex((a) => a.id === item.id);
+                if (existingIdx >= 0) {
+                  // Keep full local tasks and claims, but ensure deadline is true to db
+                  if (item.targetDeadline) {
+                    loadedAgents[existingIdx].targetDeadline = item.targetDeadline;
+                  }
+                  if (item.deadlineNote) {
+                    loadedAgents[existingIdx].deadlineNote = item.deadlineNote;
+                  }
+                } else {
+                  // Fetch tasks for this backend workflow
+                  let dbTasks: Task[] = [];
+                  try {
+                    const taskRes = await fetch(`http://localhost:5001/api/v1/agents/${item.id}/tasks`);
+                    if (taskRes.ok) {
+                      const tData = await taskRes.json();
+                      if (Array.isArray(tData.items)) {
+                        dbTasks = tData.items.map((t: any) => ({
+                          id: t.id,
+                          title: t.title,
+                          description: t.description || '',
+                          category: t.category || 'General',
+                          priority: t.priority || 'medium',
+                          status: t.status || 'ready',
+                          estimatedMinutes: t.estimatedMinutes || 30,
+                          dependencyIds: t.prerequisiteTaskIds || [],
+                          completionCondition: t.completionConditionJson?.condition || 'Satisfy requirement',
+                          evidenceRequired: Boolean(t.evidenceRequired),
+                          sequenceNumber: t.sequenceNumber || 1,
+                        }));
+                      }
+                    }
+                  } catch {
+                    // Task fetch fallback
+                  }
+
+                  loadedAgents.push({
+                    id: item.id,
+                    title: item.title,
+                    organizer: item.organizer || 'Organizing Body',
+                    type: item.agentType || 'competition',
+                    status: item.status || 'active',
+                    targetDeadline: item.targetDeadline || new Date().toISOString(),
+                    deadlineNote: item.deadlineNote || 'See rulebook',
+                    sourceLabel: item.title,
+                    sourceType: 'COMPETITION',
+                    claims: [],
+                    tasks: dbTasks,
+                    evidence: [],
+                    isDemo: Boolean(item.isDemo),
+                    lastUpdated: 'From database',
+                  });
+                }
+              }
+            }
+          }
+        } catch {
+          // Offline/local only
+        }
+
+        if (loadedAgents.length > 0) {
+          setAgents(loadedAgents);
+          setActiveAgentId(savedActiveId || loadedAgents[0].id);
         }
       } catch (err) {
         console.warn('Storage read error:', err);
@@ -302,19 +376,41 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const confirmClaim = (claimId: string, value?: string) => {
     setAgents((current) =>
       current.map((ag) => {
-        if (ag.id !== activeAgentId) return ag;
-        const updatedClaims = ag.claims.map((claim) =>
-          claim.id === claimId
-            ? {
-                ...claim,
-                value: value?.trim() || claim.value,
-                status: 'supplied_by_user' as ClaimStatus,
-                reviewed: true,
-                confidence: 1.0,
+        const hasClaim = ag.claims.some((c) => c.id === claimId);
+        if (!hasClaim && ag.id !== activeAgentId) return ag;
+
+        let updatedTargetDeadline = ag.targetDeadline;
+        let updatedDeadlineNote = ag.deadlineNote;
+
+        const updatedClaims = ag.claims.map((claim) => {
+          if (claim.id === claimId) {
+            const finalVal = value !== undefined ? value.trim() : claim.value;
+            const isDeadlineField = claim.field.toLowerCase().includes('deadline') || claim.field.toLowerCase().includes('date');
+            if (isDeadlineField && finalVal) {
+              const parsed = Date.parse(finalVal);
+              if (!isNaN(parsed)) {
+                updatedTargetDeadline = new Date(parsed).toISOString();
               }
-            : claim
-        );
-        return { ...ag, claims: updatedClaims, lastUpdated: 'Just now' };
+              updatedDeadlineNote = finalVal;
+            }
+            return {
+              ...claim,
+              value: finalVal,
+              status: 'supplied_by_user' as ClaimStatus,
+              reviewed: true,
+              confidence: 1.0,
+            };
+          }
+          return claim;
+        });
+
+        return {
+          ...ag,
+          claims: updatedClaims,
+          targetDeadline: updatedTargetDeadline,
+          deadlineNote: updatedDeadlineNote,
+          lastUpdated: 'Just now',
+        };
       })
     );
     pushActivity({
@@ -329,19 +425,41 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const editClaim = (claimId: string, newValue: string) => {
     setAgents((current) =>
       current.map((ag) => {
-        if (ag.id !== activeAgentId) return ag;
-        const updatedClaims = ag.claims.map((claim) =>
-          claim.id === claimId
-            ? {
-                ...claim,
-                value: newValue.trim(),
-                status: 'supplied_by_user' as ClaimStatus,
-                reviewed: true,
-                confidence: 1.0,
+        const hasClaim = ag.claims.some((c) => c.id === claimId);
+        if (!hasClaim && ag.id !== activeAgentId) return ag;
+
+        let updatedTargetDeadline = ag.targetDeadline;
+        let updatedDeadlineNote = ag.deadlineNote;
+
+        const updatedClaims = ag.claims.map((claim) => {
+          if (claim.id === claimId) {
+            const finalVal = newValue.trim();
+            const isDeadlineField = claim.field.toLowerCase().includes('deadline') || claim.field.toLowerCase().includes('date');
+            if (isDeadlineField && finalVal) {
+              const parsed = Date.parse(finalVal);
+              if (!isNaN(parsed)) {
+                updatedTargetDeadline = new Date(parsed).toISOString();
               }
-            : claim
-        );
-        return { ...ag, claims: updatedClaims, lastUpdated: 'Just now' };
+              updatedDeadlineNote = finalVal;
+            }
+            return {
+              ...claim,
+              value: finalVal,
+              status: 'supplied_by_user' as ClaimStatus,
+              reviewed: true,
+              confidence: 1.0,
+            };
+          }
+          return claim;
+        });
+
+        return {
+          ...ag,
+          claims: updatedClaims,
+          targetDeadline: updatedTargetDeadline,
+          deadlineNote: updatedDeadlineNote,
+          lastUpdated: 'Just now',
+        };
       })
     );
     pushActivity({
@@ -576,7 +694,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       title: data.title || 'Extracted Agent',
       organizer: data.organizer || 'Unknown Organizer',
       type: data.type || 'competition',
-      targetDeadline: data.targetDeadline || new Date(Date.now() + 86400000 * 7).toISOString(),
+      targetDeadline: data.targetDeadline || new Date(Date.now() + 86400000 * 30).toISOString(),
       deadlineNote: data.deadlineNote || 'Not specified',
       sourceLabel: data.sourceLabel || 'Uploaded Source',
       sourceType: data.sourceType || 'Text',
@@ -588,7 +706,15 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       isDemo: false,
       lastUpdated: 'Just now',
     };
-    setAgents((current) => [newAgent, ...current]);
+    setAgents((current) => {
+      const idx = current.findIndex((a) => a.id === newId);
+      if (idx >= 0) {
+        const copy = [...current];
+        copy[idx] = newAgent;
+        return copy;
+      }
+      return [newAgent, ...current];
+    });
     setActiveAgentId(newId);
     pushActivity({
       id: `act-${Date.now()}`,

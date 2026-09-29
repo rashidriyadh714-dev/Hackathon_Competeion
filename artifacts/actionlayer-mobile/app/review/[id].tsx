@@ -1,6 +1,6 @@
 import { Feather } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
-import React, { useState } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import React, { useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomSheet, PrimaryButton, SecondaryButton, StatusBadge, TextField, ui } from '@/components/actionlayer-ui';
@@ -11,11 +11,26 @@ export default function ReviewScreen() {
   const colors = useColors();
   const insets = useSafeAreaInsets();
   const router = useRouter();
-  const { agent, confirmClaim, editClaim, removeClaim, markClaimUnknown } = useApp();
+  const { id } = useLocalSearchParams<{ id?: string }>();
+  const { agents, activeAgentId, switchAgent, confirmClaim, editClaim, removeClaim, markClaimUnknown } = useApp();
 
   const [editing, setEditing] = useState<Claim | null>(null);
   const [value, setValue] = useState('');
   const [showPreviewModal, setShowPreviewModal] = useState(false);
+
+  const agent = useMemo(() => {
+    if (id) {
+      const found = agents.find((a) => a.id === id);
+      if (found) return found;
+    }
+    return agents.find((a) => a.id === activeAgentId) || agents[0];
+  }, [agents, id, activeAgentId]);
+
+  useEffect(() => {
+    if (agent && agent.id !== activeAgentId) {
+      switchAgent(agent.id);
+    }
+  }, [agent?.id, activeAgentId]);
 
   if (!agent) {
     return (
@@ -58,7 +73,10 @@ export default function ReviewScreen() {
 
   const handleConfirmActivation = () => {
     setShowPreviewModal(false);
-    router.replace(`/agent/${agent.id}`);
+    if (agent) {
+      switchAgent(agent.id);
+      router.replace(`/agent/${agent.id}`);
+    }
   };
 
   const getStatusBadge = (claim: Claim) => {

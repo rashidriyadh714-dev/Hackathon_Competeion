@@ -7,7 +7,7 @@ import { Alert, Modal, Pressable, ScrollView, StyleSheet, Text, View } from 'rea
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomSheet, GlassCard, PrimaryButton, SecondaryButton, StatusBadge, TextField, ui } from '@/components/actionlayer-ui';
 import { useColors } from '@/hooks/useColors';
-import { useApp, type Claim, type Task } from '@/context/AppContext';
+import { useApp, type Claim, type Task, type TaskStatus } from '@/context/AppContext';
 
 export default function CaptureScreen() {
   const colors = useColors();
@@ -110,19 +110,71 @@ export default function CaptureScreen() {
         modelVersion: data.job?.modelVersion || 'gemini-3.6-flash',
       }));
 
-      const mappedTasks: Task[] = (ext.tasks || []).map((t: any, i: number) => ({
-        id: `task-${i + 1}`,
-        title: t.title,
-        description: t.description,
-        category: t.category || 'General',
-        priority: t.priority || 'medium',
-        status: i === 0 ? 'ready' : 'blocked',
-        estimatedMinutes: t.estimatedMinutes || 30,
-        dependencyIds: i === 0 ? [] : [`task-${i}`],
-        completionCondition: t.completionCondition || 'Satisfy requirements',
-        evidenceRequired: t.evidenceRequired ?? true,
-        sequenceNumber: i + 1,
-      }));
+      // Extract real deadline from Gemini output or source claims
+      const deadlineClaim = (ext.claims || []).find((c: any) => {
+        const f = (c.fieldName || '').toLowerCase();
+        return f.includes('deadline') || f.includes('due date') || f.includes('submission date');
+      });
+
+      let realTargetDeadline = ext.targetDeadline;
+      let realDeadlineNote = ext.deadlineNote;
+
+      if (!realDeadlineNote && deadlineClaim?.value) {
+        realDeadlineNote = deadlineClaim.value;
+      }
+
+      if (!realTargetDeadline && deadlineClaim?.value) {
+        const parsed = Date.parse(deadlineClaim.value);
+        if (!isNaN(parsed)) {
+          realTargetDeadline = new Date(parsed).toISOString();
+        }
+      }
+
+      // If still not parsed, verify if ext.targetDeadline was valid
+      if (realTargetDeadline) {
+        const checkValid = Date.parse(realTargetDeadline);
+        if (isNaN(checkValid)) {
+          realTargetDeadline = undefined;
+        }
+      }
+
+      // Fallback only if source has zero dates whatsoever
+      if (!realTargetDeadline) {
+        realTargetDeadline = new Date(Date.now() + 86400000 * 30).toISOString();
+      }
+      if (!realDeadlineNote) {
+        realDeadlineNote = 'Not specified in source';
+      }
+
+      // Map DAG dependencies based on Gemini's dependencyTitles
+      const taskTitleToId: Record<string, string> = {};
+      (ext.tasks || []).forEach((t: any, i: number) => {
+        taskTitleToId[t.title] = `task-${i + 1}`;
+      });
+
+      const mappedTasks: Task[] = (ext.tasks || []).map((t: any, i: number) => {
+        const taskId = `task-${i + 1}`;
+        let depIds: string[] = [];
+        if (Array.isArray(t.dependencyTitles) && t.dependencyTitles.length > 0) {
+          depIds = t.dependencyTitles
+            .map((depTitle: string) => taskTitleToId[depTitle])
+            .filter(Boolean);
+        }
+        const isRoot = depIds.length === 0;
+        return {
+          id: taskId,
+          title: t.title,
+          description: t.description,
+          category: t.category || 'General',
+          priority: t.priority || 'medium',
+          status: isRoot ? ('ready' as TaskStatus) : ('blocked' as TaskStatus),
+          estimatedMinutes: t.estimatedMinutes || 30,
+          dependencyIds: depIds,
+          completionCondition: t.completionCondition || 'Satisfy requirements',
+          evidenceRequired: t.evidenceRequired ?? true,
+          sequenceNumber: i + 1,
+        };
+      });
 
       const newAgentId = data.source?.id || `agent-${Date.now()}`;
       setExtractedAgent({
@@ -130,8 +182,8 @@ export default function CaptureScreen() {
         title: ext.title || (ext.documentType ? `${ext.documentType} Agent` : 'Custom Agent'),
         organizer: ext.organizer || 'Organizing Body',
         type: 'competition',
-        targetDeadline: ext.deadline || new Date(Date.now() + 86400000 * 14).toISOString(),
-        deadlineNote: ext.deadlineNote || 'See rulebook',
+        targetDeadline: realTargetDeadline,
+        deadlineNote: realDeadlineNote,
         sourceLabel: filename || 'Source Document',
         sourceType: pendingSourceType.toUpperCase(),
         claims: mappedClaims,
