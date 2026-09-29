@@ -23,7 +23,17 @@ export default function AgentDetailScreen() {
   const insets = useSafeAreaInsets();
   const router = useRouter();
   const { id } = useLocalSearchParams<{ id?: string }>();
-  const { agents, activeAgentId, switchAgent, startTask, completeTask, addEvidence, runAudit, editTask: editTaskAction } = useApp();
+  const {
+    agents,
+    activeAgentId,
+    switchAgent,
+    startTask,
+    completeTask,
+    addEvidence,
+    runAudit,
+    editTask: editTaskAction,
+    setTaskPrerequisites,
+  } = useApp();
   const [tab, setTab] = useState<'overview' | 'graph' | 'evidence' | 'sources'>('overview');
   const [detailTask, setDetailTask] = useState<Task | null>(null);
   const [evidenceTask, setEvidenceTask] = useState<Task | null>(null);
@@ -37,6 +47,7 @@ export default function AgentDetailScreen() {
   const [editTaskState, setEditTaskState] = useState<Task | null>(null);
   const [editTaskTitle, setEditTaskTitle] = useState('');
   const [editTaskDesc, setEditTaskDesc] = useState('');
+  const [editTaskPrereqs, setEditTaskPrereqs] = useState<string[]>([]);
 
   const agent = useMemo(() => {
     if (id) {
@@ -144,7 +155,7 @@ export default function AgentDetailScreen() {
 
   const handleEditTaskSave = () => {
     if (editTaskState && editTaskTitle.trim()) {
-      editTaskAction(editTaskState.id, editTaskTitle, editTaskDesc);
+      editTaskAction(editTaskState.id, editTaskTitle, editTaskDesc, editTaskPrereqs);
       setEditTaskState(null);
     }
   };
@@ -222,6 +233,20 @@ export default function AgentDetailScreen() {
               setEditTaskState(task);
               setEditTaskTitle(task.title);
               setEditTaskDesc(task.description);
+              setEditTaskPrereqs(task.dependencyIds || []);
+            }}
+            onLinkPrereq={(taskId, prereqId) => {
+              const t = agent.tasks.find((task) => task.id === taskId);
+              const currentDeps = t?.dependencyIds || [];
+              if (!currentDeps.includes(prereqId)) {
+                setTaskPrerequisites(taskId, [...currentDeps, prereqId]);
+              }
+            }}
+            onRemovePrereq={(taskId, prereqId) => {
+              const t = agent.tasks.find((task) => task.id === taskId);
+              if (t) {
+                setTaskPrerequisites(taskId, t.dependencyIds.filter((id) => id !== prereqId));
+              }
             }}
           />
         )}
@@ -374,6 +399,57 @@ export default function AgentDetailScreen() {
               onChangeText={setEditTaskDesc}
               multiline
             />
+
+            {/* Prerequisites Section */}
+            <View style={{ gap: 6 }}>
+              <Text style={[ui.captionStrong, { color: colors.foreground }]}>
+                Prerequisites ({editTaskPrereqs.length} required)
+              </Text>
+              <Text style={[ui.caption, { color: colors.mutedForeground }]}>
+                Tasks that must be completed before this task can start:
+              </Text>
+              <View style={{ maxHeight: 180, borderRadius: 10, borderWidth: 1, borderColor: colors.border, padding: 6 }}>
+                <ScrollView nestedScrollEnabled style={{ maxHeight: 165 }}>
+                  {agent.tasks
+                    .filter((t) => t.id !== editTaskState.id)
+                    .sort((a, b) => (a.sequenceNumber ?? 0) - (b.sequenceNumber ?? 0))
+                    .map((otherTask) => {
+                      const isSelected = editTaskPrereqs.includes(otherTask.id);
+                      return (
+                        <Pressable
+                          key={otherTask.id}
+                          onPress={() => {
+                            if (isSelected) {
+                              setEditTaskPrereqs(editTaskPrereqs.filter((id) => id !== otherTask.id));
+                            } else {
+                              setEditTaskPrereqs([...editTaskPrereqs, otherTask.id]);
+                            }
+                          }}
+                          style={{
+                            flexDirection: 'row',
+                            alignItems: 'center',
+                            paddingVertical: 7,
+                            paddingHorizontal: 8,
+                            borderRadius: 6,
+                            backgroundColor: isSelected ? colors.primary + '18' : 'transparent',
+                            gap: 8,
+                          }}
+                        >
+                          <Feather
+                            name={isSelected ? 'check-square' : 'square'}
+                            size={16}
+                            color={isSelected ? colors.primary : colors.mutedForeground}
+                          />
+                          <Text style={[ui.caption, { color: colors.foreground, flex: 1 }]} numberOfLines={1}>
+                            {String(otherTask.sequenceNumber ?? 0).padStart(2, '0')}. {otherTask.title}
+                          </Text>
+                        </Pressable>
+                      );
+                    })}
+                </ScrollView>
+              </View>
+            </View>
+
             <PrimaryButton
               label="Save Changes"
               icon="check"
@@ -764,6 +840,8 @@ function GraphTab({
   onEvidence,
   onSelectTask,
   onEdit,
+  onLinkPrereq,
+  onRemovePrereq,
 }: {
   agent: import('@/context/AppContext').Agent;
   onStart: (id: string) => void;
@@ -771,12 +849,27 @@ function GraphTab({
   onEvidence: (task: Task) => void;
   onSelectTask: (task: Task) => void;
   onEdit: (task: Task) => void;
+  onLinkPrereq: (taskId: string, prereqId: string) => void;
+  onRemovePrereq: (taskId: string, prereqId: string) => void;
 }) {
   const colors = useColors();
   const [filter, setFilter] = useState<'all' | 'ready' | 'blocked' | 'in_progress' | 'complete'>('all');
   const [viewMode, setViewMode] = useState<'sequence' | 'category'>('sequence');
   const next = getNextAction(agent);
   const nextIsBlocked = Boolean(next.blockedTask);
+
+  const task01 = agent.tasks.find((t) => t.sequenceNumber === 1);
+  const task02 = agent.tasks.find((t) => t.sequenceNumber === 2);
+  const task02Requires01 = Boolean(task01 && task02 && task02.dependencyIds.includes(task01.id));
+  const readyTasks = agent.tasks.filter((t) => t.status === 'ready');
+
+  const filterCounts = useMemo(() => ({
+    all: agent.tasks.length,
+    ready: agent.tasks.filter((t) => t.status === 'ready').length,
+    blocked: agent.tasks.filter((t) => t.status === 'blocked').length,
+    in_progress: agent.tasks.filter((t) => t.status === 'in_progress').length,
+    complete: agent.tasks.filter((t) => t.status === 'completed_by_user' || t.status === 'verified').length,
+  }), [agent.tasks]);
 
   const milestones = [
     { title: 'Eligibility', category: 'Eligibility' },
@@ -827,8 +920,25 @@ function GraphTab({
       >
         {/* Task header row */}
         <View style={styles.taskHeader}>
-          <View style={[styles.sequenceBadge, { backgroundColor: isCompleted ? colors.success : colors.secondary }]}>
-            <Text style={[ui.captionStrong, { color: isCompleted ? '#FFFFFF' : colors.primary }]}>
+          <View
+            style={[
+              styles.sequenceBadge,
+              {
+                backgroundColor: isCompleted ? colors.success : 'rgba(255, 255, 255, 0.12)',
+                borderColor: isCompleted ? colors.success : 'rgba(255, 255, 255, 0.22)',
+              },
+            ]}
+          >
+            <Text
+              style={[
+                ui.captionStrong,
+                {
+                  color: '#FFFFFF',
+                  fontFamily: 'Inter_700Bold',
+                  fontSize: 13,
+                },
+              ]}
+            >
               {isCompleted ? '✓' : String(task.sequenceNumber ?? index + 1).padStart(2, '0')}
             </Text>
           </View>
@@ -913,28 +1023,35 @@ function GraphTab({
       {/* Filter pills & View Mode Row */}
       <View style={{ gap: 10, marginTop: 4 }}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
-          {(['all', 'ready', 'blocked', 'in_progress', 'complete'] as const).map((f) => (
-            <Pressable
-              key={f}
-              onPress={() => setFilter(f)}
-              style={[
-                styles.filterPill,
-                {
-                  backgroundColor: filter === f ? colors.primary : colors.card,
-                  borderColor: filter === f ? colors.primary : colors.border,
-                },
-              ]}
-            >
-              <Text
+          {(['all', 'ready', 'blocked', 'in_progress', 'complete'] as const).map((f) => {
+            const isActive = filter === f;
+            const label = f === 'in_progress' ? 'In Progress' : f[0].toUpperCase() + f.slice(1);
+            return (
+              <Pressable
+                key={f}
+                onPress={() => setFilter(f)}
                 style={[
-                  ui.captionStrong,
-                  { color: filter === f ? '#FFFFFF' : colors.mutedForeground, textTransform: 'capitalize' },
+                  styles.filterPill,
+                  {
+                    backgroundColor: isActive ? colors.primary : colors.card,
+                    borderColor: isActive ? colors.primary : colors.border,
+                  },
                 ]}
               >
-                {f === 'in_progress' ? 'In Progress' : f}
-              </Text>
-            </Pressable>
-          ))}
+                <Text
+                  style={[
+                    ui.captionStrong,
+                    {
+                      color: isActive ? colors.primaryForeground : colors.foreground,
+                      fontFamily: 'Inter_600SemiBold',
+                    },
+                  ]}
+                >
+                  {label} ({filterCounts[f]})
+                </Text>
+              </Pressable>
+            );
+          })}
         </ScrollView>
 
         {/* View Mode Switcher: Sequential Order vs Group by Category */}
@@ -944,31 +1061,121 @@ function GraphTab({
             <Pressable
               onPress={() => setViewMode('sequence')}
               style={{
-                paddingHorizontal: 10,
-                paddingVertical: 4,
+                paddingHorizontal: 12,
+                paddingVertical: 5,
                 borderRadius: 8,
                 backgroundColor: viewMode === 'sequence' ? colors.primary : 'transparent',
               }}
             >
-              <Text style={[ui.captionStrong, { color: viewMode === 'sequence' ? '#FFFFFF' : colors.mutedForeground }]}>
-                Sequential (01 - {agent.tasks.length})
+              <Text
+                style={[
+                  ui.captionStrong,
+                  {
+                    color: viewMode === 'sequence' ? colors.primaryForeground : colors.foreground,
+                    fontFamily: 'Inter_600SemiBold',
+                  },
+                ]}
+              >
+                Sequential (01 - {String(agent.tasks.length).padStart(2, '0')})
               </Text>
             </Pressable>
             <Pressable
               onPress={() => setViewMode('category')}
               style={{
-                paddingHorizontal: 10,
-                paddingVertical: 4,
+                paddingHorizontal: 12,
+                paddingVertical: 5,
                 borderRadius: 8,
                 backgroundColor: viewMode === 'category' ? colors.primary : 'transparent',
               }}
             >
-              <Text style={[ui.captionStrong, { color: viewMode === 'category' ? '#FFFFFF' : colors.mutedForeground }]}>
+              <Text
+                style={[
+                  ui.captionStrong,
+                  {
+                    color: viewMode === 'category' ? colors.primaryForeground : colors.foreground,
+                    fontFamily: 'Inter_600SemiBold',
+                  },
+                ]}
+              >
                 By Category
               </Text>
             </Pressable>
           </View>
         </View>
+
+        {/* DAG Root Status Explanation & Flow Mode Switcher */}
+        {task01 && task02 && (
+          <View
+            style={[
+              styles.dagNoticeCard,
+              {
+                backgroundColor: colors.card,
+                borderColor: task02Requires01 ? colors.success + '40' : colors.border,
+              },
+            ]}
+          >
+            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+                <Feather
+                  name={task02Requires01 ? 'check-circle' : 'git-branch'}
+                  size={16}
+                  color={task02Requires01 ? colors.success : colors.primary}
+                />
+                <Text style={[ui.captionStrong, { color: colors.foreground }]}>
+                  {task02Requires01
+                    ? 'Strict Sequential Flow: Only Task 01 is Ready'
+                    : `DAG Parallel Roots: ${readyTasks.length} Tasks Ready Simultaneously`}
+                </Text>
+              </View>
+              <StatusBadge
+                label={task02Requires01 ? '1 Task Ready' : '2 Tasks Ready'}
+                tone={task02Requires01 ? 'success' : 'info'}
+              />
+            </View>
+
+            <Text style={[ui.caption, { color: colors.mutedForeground, marginTop: 4, lineHeight: 18 }]}>
+              {task02Requires01
+                ? 'Task 02 is blocked because it requires Task 01 ("Resolve Deadline and Instruction Conflicts") to be completed first.'
+                : 'Tasks 01 and 02 both have no prerequisites, allowing team members to execute them in parallel. Since Task 01 resolves conflicts before downstream work, you can lock Task 02 until Task 01 completes.'}
+            </Text>
+
+            <Pressable
+              onPress={() => {
+                if (task02Requires01) {
+                  onRemovePrereq(task02.id, task01.id);
+                } else {
+                  onLinkPrereq(task02.id, task01.id);
+                }
+              }}
+              style={[
+                styles.linkBtn,
+                {
+                  backgroundColor: task02Requires01 ? colors.secondary : colors.primary,
+                  marginTop: 6,
+                },
+              ]}
+            >
+              <Feather
+                name={task02Requires01 ? 'git-branch' : 'lock'}
+                size={13}
+                color={task02Requires01 ? colors.foreground : colors.primaryForeground}
+              />
+              <Text
+                style={[
+                  ui.captionStrong,
+                  {
+                    color: task02Requires01 ? colors.foreground : colors.primaryForeground,
+                    fontSize: 12,
+                  },
+                ]}
+              >
+                {task02Requires01
+                  ? 'Switch to Parallel Mode (01 & 02 both Ready)'
+                  : 'Require Task 01 Before Task 02 (Only 1 Ready)'}
+              </Text>
+            </Pressable>
+          </View>
+        )}
       </View>
 
       {/* Render tasks */}
@@ -1406,5 +1613,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: 6,
+  },
+  dagNoticeCard: {
+    padding: 14,
+    borderRadius: 14,
+    borderWidth: 1,
+    marginTop: 10,
+    gap: 6,
+  },
+  linkBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
   },
 });

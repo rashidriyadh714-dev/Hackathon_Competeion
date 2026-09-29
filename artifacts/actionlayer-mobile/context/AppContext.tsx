@@ -126,7 +126,9 @@ type AppContextValue = {
   editClaim: (claimId: string, newValue: string) => void;
   removeClaim: (claimId: string) => void;
   markClaimUnknown: (claimId: string) => void;
-  editTask: (taskId: string, newTitle: string, newDescription: string) => void;
+  editTask: (taskId: string, newTitle: string, newDescription: string, newDependencyIds?: string[]) => void;
+  setTaskPrerequisites: (taskId: string, dependencyIds: string[]) => void;
+  enforceSequentialExecution: (agentId: string, enabled: boolean) => void;
   removeActivity: (activityId: string) => void;
   editActivity: (activityId: string, newTitle: string, newDetail: string) => void;
   startTask: (taskId: string) => void;
@@ -552,17 +554,83 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const editTask = (taskId: string, newTitle: string, newDescription: string) => {
+  const editTask = (
+    taskId: string,
+    newTitle: string,
+    newDescription: string,
+    newDependencyIds?: string[]
+  ) => {
     setAgents((current) => {
       const updated = current.map((ag) => {
         const hasTask = ag.tasks.some((t) => t.id === taskId);
         if (!hasTask && ag.id !== activeAgentId) return ag;
         const newTasks = ag.tasks.map((t) => {
           if (t.id === taskId) {
-            return { ...t, title: newTitle, description: newDescription };
+            return {
+              ...t,
+              title: newTitle,
+              description: newDescription,
+              ...(newDependencyIds !== undefined ? { dependencyIds: newDependencyIds } : {}),
+            };
           }
           return t;
         });
+        return { ...ag, tasks: resolveGraph(newTasks), lastUpdated: 'Just now' };
+      });
+      AsyncStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ agents: updated, activeAgentId, activities })
+      ).catch(() => undefined);
+      return updated;
+    });
+  };
+
+  const setTaskPrerequisites = (taskId: string, dependencyIds: string[]) => {
+    setAgents((current) => {
+      const updated = current.map((ag) => {
+        const hasTask = ag.tasks.some((t) => t.id === taskId);
+        if (!hasTask && ag.id !== activeAgentId) return ag;
+        const newTasks = ag.tasks.map((t) => {
+          if (t.id === taskId) {
+            return { ...t, dependencyIds };
+          }
+          return t;
+        });
+        return { ...ag, tasks: resolveGraph(newTasks), lastUpdated: 'Just now' };
+      });
+      AsyncStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ agents: updated, activeAgentId, activities })
+      ).catch(() => undefined);
+      return updated;
+    });
+  };
+
+  const enforceSequentialExecution = (agentId: string, enabled: boolean) => {
+    setAgents((current) => {
+      const updated = current.map((ag) => {
+        if (ag.id !== agentId) return ag;
+        const sorted = [...ag.tasks].sort((a, b) => (a.sequenceNumber ?? 0) - (b.sequenceNumber ?? 0));
+        let newTasks: Task[];
+        if (enabled) {
+          // In strict sequential mode, each task i requires task i-1 to be completed first
+          newTasks = sorted.map((t, idx) => {
+            if (idx === 0) {
+              return { ...t, dependencyIds: [] };
+            }
+            const prevTask = sorted[idx - 1];
+            const deps = Array.from(new Set([...t.dependencyIds, prevTask.id]));
+            return { ...t, dependencyIds: deps };
+          });
+        } else {
+          // When toggled off, if task 02 only has task 01 as prereq because of sequential mode, unchain it
+          newTasks = sorted.map((t, idx) => {
+            if (idx === 1 && sorted[0]) {
+              return { ...t, dependencyIds: t.dependencyIds.filter((id) => id !== sorted[0].id) };
+            }
+            return t;
+          });
+        }
         return { ...ag, tasks: resolveGraph(newTasks), lastUpdated: 'Just now' };
       });
       AsyncStorage.setItem(
@@ -825,6 +893,8 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       removeClaim,
       markClaimUnknown,
       editTask,
+      setTaskPrerequisites,
+      enforceSequentialExecution,
       removeActivity,
       editActivity,
       startTask,
