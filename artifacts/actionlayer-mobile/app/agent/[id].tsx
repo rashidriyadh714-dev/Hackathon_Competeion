@@ -774,6 +774,7 @@ function GraphTab({
 }) {
   const colors = useColors();
   const [filter, setFilter] = useState<'all' | 'ready' | 'blocked' | 'in_progress' | 'complete'>('all');
+  const [viewMode, setViewMode] = useState<'sequence' | 'category'>('sequence');
   const next = getNextAction(agent);
   const nextIsBlocked = Boolean(next.blockedTask);
 
@@ -800,167 +801,200 @@ function GraphTab({
     return true;
   });
 
+  const sortedTasks = useMemo(() => {
+    return [...filteredTasks].sort((a, b) => (a.sequenceNumber ?? 0) - (b.sequenceNumber ?? 0));
+  }, [filteredTasks]);
+
+  const renderTaskCard = (task: Task, index: number) => {
+    const isCompleted = task.status === 'completed_by_user' || task.status === 'verified';
+    const isBlocked = task.status === 'blocked';
+    const isInProgress = task.status === 'in_progress';
+    const prereqTasks = task.dependencyIds
+      .map((id) => agent.tasks.find((t) => t.id === id))
+      .filter(Boolean) as Task[];
+
+    return (
+      <Pressable
+        key={task.id}
+        onPress={() => onSelectTask(task)}
+        style={[
+          styles.graphCard,
+          {
+            backgroundColor: colors.card,
+            borderColor: isBlocked ? colors.warning : isCompleted ? colors.success : colors.border,
+          },
+        ]}
+      >
+        {/* Task header row */}
+        <View style={styles.taskHeader}>
+          <View style={[styles.sequenceBadge, { backgroundColor: isCompleted ? colors.success : colors.secondary }]}>
+            <Text style={[ui.captionStrong, { color: isCompleted ? '#FFFFFF' : colors.primary }]}>
+              {isCompleted ? '✓' : String(task.sequenceNumber ?? index + 1).padStart(2, '0')}
+            </Text>
+          </View>
+
+          <View style={styles.taskHeaderCopy}>
+            <Text style={[styles.taskTitle, { color: colors.foreground }]}>{task.title}</Text>
+            <Text style={[ui.caption, { color: colors.mutedForeground }]}>
+              {task.category} · {task.estimatedMinutes} min · {task.priority.toUpperCase()} Priority
+            </Text>
+          </View>
+
+          <StatusBadge
+            label={isBlocked ? 'Blocked' : isCompleted ? 'Completed' : isInProgress ? 'In Progress' : 'Ready'}
+            tone={isBlocked ? 'warning' : isCompleted ? 'success' : isInProgress ? 'info' : 'neutral'}
+          />
+        </View>
+
+        {/* Description */}
+        <Text style={[styles.taskDesc, { color: colors.foreground }]}>{task.description}</Text>
+
+        {/* Dependency information */}
+        {task.dependencyIds.length > 0 && (
+          <View style={[styles.prereqBox, { backgroundColor: isBlocked ? colors.warning + '20' : colors.secondary }]}>
+            <Feather
+              name={isBlocked ? 'lock' : 'unlock'}
+              size={14}
+              color={isBlocked ? colors.warning : colors.primary}
+            />
+            <Text style={[ui.caption, { color: colors.foreground, flex: 1 }]}>
+              {isBlocked ? 'Prerequisite required: ' : 'Prerequisites satisfied: '}
+              {prereqTasks.map((p) => `"${p.title}"`).join(', ')}
+            </Text>
+          </View>
+        )}
+
+        {/* Interactive action buttons */}
+        <View style={[styles.taskActions, { borderTopColor: colors.border }]}>
+          {task.evidenceRequired && (
+            <Pressable onPress={() => onEvidence(task)} style={styles.actionBtn}>
+              <Feather name="paperclip" size={15} color={colors.primary} />
+              <Text style={[ui.captionStrong, { color: colors.primary }]}>
+                {task.evidenceId ? 'Update Evidence' : 'Attach Evidence'}
+              </Text>
+            </Pressable>
+          )}
+
+          <Pressable onPress={() => onEdit(task)} style={styles.actionBtn}>
+            <Feather name="edit-2" size={15} color={colors.primary} />
+            <Text style={[ui.captionStrong, { color: colors.primary }]}>Edit</Text>
+          </Pressable>
+
+          {!isCompleted && !isBlocked && (
+            <Pressable
+              onPress={() => (isInProgress ? onComplete(task.id) : onStart(task.id))}
+              style={styles.actionBtn}
+            >
+              <Feather name={isInProgress ? 'check-circle' : 'play'} size={15} color={colors.success} />
+              <Text style={[ui.captionStrong, { color: colors.success }]}>
+                {isInProgress ? 'Mark Complete' : 'Start Task'}
+              </Text>
+            </Pressable>
+          )}
+
+          {isBlocked && (
+            <View style={styles.blockedNotice}>
+              <Feather name="alert-circle" size={14} color={colors.warning} />
+              <Text style={[ui.caption, { color: colors.warning }]}>Complete upstream task first</Text>
+            </View>
+          )}
+        </View>
+      </Pressable>
+    );
+  };
+
   return (
     <View style={styles.section}>
       <SectionHeader title={`Requirement Graph (${agent.tasks.length} Tasks)`} />
       <Text style={[ui.caption, { color: colors.mutedForeground }]}>
-        Deterministic DAG solver: a task remains strictly blocked until all required prerequisites reach a verified or completed state.
+        Deterministic DAG solver: a task remains strictly blocked until all required prerequisites reach a verified state. Independent root tasks are Ready to start simultaneously in parallel.
       </Text>
 
-      {/* Filter pills */}
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
-        {(['all', 'ready', 'blocked', 'in_progress', 'complete'] as const).map((f) => (
-          <Pressable
-            key={f}
-            onPress={() => setFilter(f)}
-            style={[
-              styles.filterPill,
-              {
-                backgroundColor: filter === f ? colors.primary : colors.card,
-                borderColor: filter === f ? colors.primary : colors.border,
-              },
-            ]}
-          >
-            <Text
+      {/* Filter pills & View Mode Row */}
+      <View style={{ gap: 10, marginTop: 4 }}>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.filterScroll}>
+          {(['all', 'ready', 'blocked', 'in_progress', 'complete'] as const).map((f) => (
+            <Pressable
+              key={f}
+              onPress={() => setFilter(f)}
               style={[
-                ui.captionStrong,
-                { color: filter === f ? '#FFFFFF' : colors.mutedForeground, textTransform: 'capitalize' },
+                styles.filterPill,
+                {
+                  backgroundColor: filter === f ? colors.primary : colors.card,
+                  borderColor: filter === f ? colors.primary : colors.border,
+                },
               ]}
             >
-              {f === 'in_progress' ? 'In Progress' : f}
-            </Text>
-          </Pressable>
-        ))}
-      </ScrollView>
+              <Text
+                style={[
+                  ui.captionStrong,
+                  { color: filter === f ? '#FFFFFF' : colors.mutedForeground, textTransform: 'capitalize' },
+                ]}
+              >
+                {f === 'in_progress' ? 'In Progress' : f}
+              </Text>
+            </Pressable>
+          ))}
+        </ScrollView>
 
-      {/* Render tasks grouped by Milestones */}
-      {[
-        ...milestones,
-        { title: 'Other Tasks', category: 'Other' } // Append fallback milestone
-      ].map((milestone) => {
-        let milestoneTasks;
-        
-        if (milestone.category === 'Other') {
-          // Find tasks that do not match any defined milestone
-          milestoneTasks = filteredTasks.filter(
-            (t) => !milestones.some((m) => m.category.toLowerCase() === t.category.toLowerCase())
-          );
-        } else {
-          // Standard mapping
-          milestoneTasks = filteredTasks.filter(
-            (t) => t.category.toLowerCase() === milestone.category.toLowerCase()
-          );
-        }
-
-        if (milestoneTasks.length === 0) return null;
-
-        return (
-          <View key={milestone.category} style={styles.milestoneBlock}>
-            <View style={styles.milestoneHeader}>
-              <View style={[styles.milestoneDot, { backgroundColor: colors.primary }]} />
-              <Text style={[styles.milestoneTitle, { color: colors.foreground }]}>{milestone.title.toUpperCase()}</Text>
-            </View>
-
-            {milestoneTasks.map((task, index) => {
-              const isCompleted = task.status === 'completed_by_user' || task.status === 'verified';
-              const isBlocked = task.status === 'blocked';
-              const isInProgress = task.status === 'in_progress';
-              const prereqTasks = task.dependencyIds
-                .map((id) => agent.tasks.find((t) => t.id === id))
-                .filter(Boolean) as Task[];
-
-              return (
-                <Pressable
-                  key={task.id}
-                  onPress={() => onSelectTask(task)}
-                  style={[
-                    styles.graphCard,
-                    {
-                      backgroundColor: colors.card,
-                      borderColor: isBlocked ? colors.warning : isCompleted ? colors.success : colors.border,
-                    },
-                  ]}
-                >
-                  {/* Task header row */}
-                  <View style={styles.taskHeader}>
-                    <View style={[styles.sequenceBadge, { backgroundColor: isCompleted ? colors.success : colors.secondary }]}>
-                      <Text style={[ui.captionStrong, { color: isCompleted ? '#FFFFFF' : colors.primary }]}>
-                        {isCompleted ? '✓' : String(task.sequenceNumber ?? index + 1).padStart(2, '0')}
-                      </Text>
-                    </View>
-
-                    <View style={styles.taskHeaderCopy}>
-                      <Text style={[styles.taskTitle, { color: colors.foreground }]}>{task.title}</Text>
-                      <Text style={[ui.caption, { color: colors.mutedForeground }]}>
-                        {task.category} · {task.estimatedMinutes} min · {task.priority.toUpperCase()} Priority
-                      </Text>
-                    </View>
-
-                    <StatusBadge
-                      label={isBlocked ? 'Blocked' : isCompleted ? 'Completed' : isInProgress ? 'In Progress' : 'Ready'}
-                      tone={isBlocked ? 'warning' : isCompleted ? 'success' : isInProgress ? 'info' : 'neutral'}
-                    />
-                  </View>
-
-                  {/* Description */}
-                  <Text style={[styles.taskDesc, { color: colors.foreground }]}>{task.description}</Text>
-
-                  {/* Dependency information */}
-                  {task.dependencyIds.length > 0 && (
-                    <View style={[styles.prereqBox, { backgroundColor: isBlocked ? colors.warning + '20' : colors.secondary }]}>
-                      <Feather
-                        name={isBlocked ? 'lock' : 'unlock'}
-                        size={14}
-                        color={isBlocked ? colors.warning : colors.primary}
-                      />
-                      <Text style={[ui.caption, { color: colors.foreground, flex: 1 }]}>
-                        {isBlocked ? 'Prerequisite required: ' : 'Prerequisites satisfied: '}
-                        {prereqTasks.map((p) => `"${p.title}"`).join(', ')}
-                      </Text>
-                    </View>
-                  )}
-
-                  {/* Interactive action buttons */}
-                  <View style={[styles.taskActions, { borderTopColor: colors.border }]}>
-                    {task.evidenceRequired && (
-                      <Pressable onPress={() => onEvidence(task)} style={styles.actionBtn}>
-                        <Feather name="paperclip" size={15} color={colors.primary} />
-                        <Text style={[ui.captionStrong, { color: colors.primary }]}>
-                          {task.evidenceId ? 'Update Evidence' : 'Attach Evidence'}
-                        </Text>
-                      </Pressable>
-                    )}
-
-                    <Pressable onPress={() => onEdit(task)} style={styles.actionBtn}>
-                      <Feather name="edit-2" size={15} color={colors.primary} />
-                      <Text style={[ui.captionStrong, { color: colors.primary }]}>Edit</Text>
-                    </Pressable>
-
-                    {!isCompleted && !isBlocked && (
-                      <Pressable
-                        onPress={() => (isInProgress ? onComplete(task.id) : onStart(task.id))}
-                        style={styles.actionBtn}
-                      >
-                        <Feather name={isInProgress ? 'check-circle' : 'play'} size={15} color={colors.success} />
-                        <Text style={[ui.captionStrong, { color: colors.success }]}>
-                          {isInProgress ? 'Mark Complete' : 'Start Task'}
-                        </Text>
-                      </Pressable>
-                    )}
-
-                    {isBlocked && (
-                      <View style={styles.blockedNotice}>
-                        <Feather name="alert-circle" size={14} color={colors.warning} />
-                        <Text style={[ui.caption, { color: colors.warning }]}>Complete upstream task first</Text>
-                      </View>
-                    )}
-                  </View>
-                </Pressable>
-              );
-            })}
+        {/* View Mode Switcher: Sequential Order vs Group by Category */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+          <Text style={[ui.caption, { color: colors.mutedForeground }]}>Display Order:</Text>
+          <View style={{ flexDirection: 'row', gap: 6, backgroundColor: colors.secondary, borderRadius: 10, padding: 3 }}>
+            <Pressable
+              onPress={() => setViewMode('sequence')}
+              style={{
+                paddingHorizontal: 10,
+                paddingVertical: 4,
+                borderRadius: 8,
+                backgroundColor: viewMode === 'sequence' ? colors.primary : 'transparent',
+              }}
+            >
+              <Text style={[ui.captionStrong, { color: viewMode === 'sequence' ? '#FFFFFF' : colors.mutedForeground }]}>
+                Sequential (01 - {agent.tasks.length})
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => setViewMode('category')}
+              style={{
+                paddingHorizontal: 10,
+                paddingVertical: 4,
+                borderRadius: 8,
+                backgroundColor: viewMode === 'category' ? colors.primary : 'transparent',
+              }}
+            >
+              <Text style={[ui.captionStrong, { color: viewMode === 'category' ? '#FFFFFF' : colors.mutedForeground }]}>
+                By Category
+              </Text>
+            </Pressable>
           </View>
-        );
-      })}
+        </View>
+      </View>
+
+      {/* Render tasks */}
+      {viewMode === 'sequence' ? (
+        <View style={{ gap: 12 }}>
+          {sortedTasks.map((task, index) => renderTaskCard(task, index))}
+        </View>
+      ) : (
+        [...milestones, { title: 'Other Tasks', category: 'Other' }].map((milestone) => {
+          const milestoneTasks = milestone.category === 'Other'
+            ? filteredTasks.filter((t) => !milestones.some((m) => m.category.toLowerCase() === t.category.toLowerCase()))
+            : filteredTasks.filter((t) => t.category.toLowerCase() === milestone.category.toLowerCase());
+
+          if (milestoneTasks.length === 0) return null;
+
+          return (
+            <View key={milestone.category} style={styles.milestoneBlock}>
+              <View style={styles.milestoneHeader}>
+                <View style={[styles.milestoneDot, { backgroundColor: colors.primary }]} />
+                <Text style={[styles.milestoneTitle, { color: colors.foreground }]}>{milestone.title.toUpperCase()}</Text>
+              </View>
+              {milestoneTasks.map((task, index) => renderTaskCard(task, index))}
+            </View>
+          );
+        })
+      )}
 
       {/* Persistent Next Action bar below graph */}
       <View style={[styles.nextActionCallout, { backgroundColor: colors.primary, marginTop: 16 }]}>
