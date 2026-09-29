@@ -369,7 +369,11 @@ export default function ReviewScreen() {
           </View>
           <View style={styles.previewRow}>
             <Text style={[ui.caption, { color: colors.mutedForeground }]}>Target Deadline</Text>
-            <Text style={[ui.captionStrong, { color: colors.foreground }]}>{agent.deadlineNote}</Text>
+            <Text style={[ui.captionStrong, { color: colors.foreground, flex: 1, textAlign: 'right' }]} numberOfLines={1}>
+              {agent.targetDeadline
+                ? new Date(agent.targetDeadline).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+                : agent.deadlineNote}
+            </Text>
           </View>
           <View style={styles.previewRow}>
             <Text style={[ui.caption, { color: colors.mutedForeground }]}>Tasks in DAG</Text>

@@ -24,6 +24,11 @@ export default function HomeScreen() {
   const nextIsBlocked = Boolean(next.blockedTask);
   const uncertain = agent ? agent.claims.filter((claim) => !claim.reviewed).length : 0;
 
+  const targetDate = agent?.targetDeadline ? new Date(agent.targetDeadline) : null;
+  const shortDeadline = targetDate && !isNaN(targetDate.getTime())
+    ? new Intl.DateTimeFormat('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }).format(targetDate)
+    : 'Not specified';
+
   const handleRunAudit = () => {
     if (!agent) return;
     const res = runAudit(agent.id);
@@ -178,7 +183,7 @@ export default function HomeScreen() {
                   </View>
                   <View style={[styles.metaItem, { backgroundColor: colors.muted }]}>
                     <Feather name="calendar" size={13} color={colors.mutedForeground} />
-                    <Text style={[styles.metaText, { color: colors.text }]}>{agent.deadlineNote}</Text>
+                    <Text style={[styles.metaText, { color: colors.text }]} numberOfLines={1}>{shortDeadline}</Text>
                   </View>
                   <View style={[styles.metaItem, { backgroundColor: colors.muted }]}>
                     <Feather name="tag" size={13} color={colors.mutedForeground} />
@@ -316,7 +321,7 @@ export default function HomeScreen() {
               </View>
               <View style={styles.upcomingCopy}>
                 <Text style={[styles.upcomingTitle, { color: colors.text }]}>Final Submission Deadline</Text>
-                <Text style={[styles.upcomingSub, { color: colors.mutedForeground }]}>{agent.title} · {agent.deadlineNote}</Text>
+                <Text style={[styles.upcomingSub, { color: colors.mutedForeground }]} numberOfLines={1}>{agent.title} · {shortDeadline}</Text>
               </View>
               <Feather name="arrow-up-right" size={18} color={colors.text} />
             </GlassCard>

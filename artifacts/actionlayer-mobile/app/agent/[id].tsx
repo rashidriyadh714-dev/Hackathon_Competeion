@@ -651,12 +651,17 @@ function OverviewTab({
     <View style={styles.section}>
       {/* Deadline and Countdown Card */}
       <View style={styles.overviewHeader}>
-        <View>
+        <View style={{ flex: 1, minWidth: 0, paddingRight: 12 }}>
           <Text style={[ui.caption, { color: colors.mutedForeground }]}>Target Submission Deadline</Text>
-          <Text style={[styles.deadline, { color: colors.foreground }]}>{agent.deadlineNote || formattedDate}</Text>
-          <Text style={[ui.caption, { color: colors.warning }]}>
+          <Text
+            style={[styles.deadline, { color: colors.foreground }]}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >
+            {formattedDate}
+          </Text>
+          <Text style={[ui.caption, { color: colors.warning, marginTop: 2 }]}>
             {daysRemaining > 0 ? `${daysRemaining} days remaining` : 'Deadline reached'}
-            {formattedDate !== 'Unknown Date' && formattedDate !== agent.deadlineNote ? ` · Target: ${formattedDate}` : ''}
           </Text>
         </View>
         <View style={[styles.countdown, { backgroundColor: colors.secondary }]}>
@@ -1137,19 +1142,27 @@ const styles = StyleSheet.create({
   tabs: { flexDirection: 'row', borderBottomWidth: 1, borderBottomColor: 'rgba(255, 255, 255, 0.12)' },
   tab: { flex: 1, paddingVertical: 12, alignItems: 'center', borderBottomWidth: 2 },
   section: { gap: 16 },
-  overviewHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  deadline: { fontFamily: 'Inter_700Bold', fontSize: 22, marginTop: 4, color: '#FFFFFF' },
+  overviewHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    gap: 12,
+    width: '100%',
+    overflow: 'hidden',
+  },
+  deadline: { fontFamily: 'Inter_700Bold', fontSize: 22, marginTop: 2, color: '#FFFFFF', flexShrink: 1 },
   countdown: {
-    width: 72,
-    height: 72,
-    borderRadius: 20,
+    width: 68,
+    height: 68,
+    borderRadius: 18,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: 'rgba(255, 255, 255, 0.10)',
     borderWidth: 1,
     borderColor: 'rgba(255, 255, 255, 0.18)',
+    flexShrink: 0,
   },
-  countdownNumber: { fontFamily: 'Inter_700Bold', fontSize: 30, lineHeight: 32, color: '#FFFFFF' },
+  countdownNumber: { fontFamily: 'Inter_700Bold', fontSize: 28, lineHeight: 30, color: '#FFFFFF' },
   indicators: { flexDirection: 'row', gap: 8 },
   indicatorCard: {
     flex: 1,
