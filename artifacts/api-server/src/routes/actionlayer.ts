@@ -4,7 +4,7 @@ import {
   type Response,
   type NextFunction,
 } from "express";
-import { asc, desc, eq, and } from "drizzle-orm";
+import { asc, desc, eq, and, inArray, or } from "drizzle-orm";
 import multer from "multer";
 import { db } from "@workspace/db";
 import {
@@ -21,6 +21,7 @@ import {
   actionlayerVerifications,
   actionlayerAuditEvents,
   actionlayerNotifications,
+  actionlayerReminders,
 } from "@workspace/db";
 import { AiService, getMockCompetitionExtraction } from "../services/aiService";
 import { GraphService, type TaskNode } from "../services/graphService";
@@ -659,6 +660,94 @@ router.get("/v1/agents/:agentId", async (req, res, next) => {
     next(err);
   }
 });
+
+router.delete(
+  "/v1/agents/:agentId",
+  async (req: Request, res: Response, next: NextFunction) => {
+    try {
+      const agentId = String(req.params.agentId);
+      const isUuid =
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+          agentId,
+        );
+      if (!isUuid) {
+        res.json({ success: true, deletedId: agentId, existed: false });
+        return;
+      }
+
+      // Find tasks for this workflow
+      const tasks = await db
+        .select({ id: actionlayerTasks.id })
+        .from(actionlayerTasks)
+        .where(eq(actionlayerTasks.workflowId, agentId));
+      const taskIds = tasks.map((t) => t.id);
+
+      if (taskIds.length > 0) {
+        // Find evidence for these tasks
+        const evidence = await db
+          .select({ id: actionlayerEvidence.id })
+          .from(actionlayerEvidence)
+          .where(inArray(actionlayerEvidence.taskId, taskIds));
+        const evidenceIds = evidence.map((e) => e.id);
+
+        if (evidenceIds.length > 0) {
+          await db
+            .delete(actionlayerVerifications)
+            .where(inArray(actionlayerVerifications.evidenceId, evidenceIds));
+          await db
+            .delete(actionlayerEvidence)
+            .where(inArray(actionlayerEvidence.id, evidenceIds));
+        }
+
+        await db
+          .delete(actionlayerTaskDependencies)
+          .where(
+            or(
+              inArray(actionlayerTaskDependencies.prerequisiteTaskId, taskIds),
+              inArray(actionlayerTaskDependencies.dependentTaskId, taskIds),
+            ),
+          );
+
+        await db
+          .delete(actionlayerTaskClaims)
+          .where(inArray(actionlayerTaskClaims.taskId, taskIds));
+
+        await db
+          .delete(actionlayerReminders)
+          .where(inArray(actionlayerReminders.taskId, taskIds));
+
+        await db
+          .delete(actionlayerTasks)
+          .where(eq(actionlayerTasks.workflowId, agentId));
+      }
+
+      await db
+        .delete(actionlayerReminders)
+        .where(eq(actionlayerReminders.workflowId, agentId));
+
+      await db
+        .delete(actionlayerWorkflowSources)
+        .where(eq(actionlayerWorkflowSources.workflowId, agentId));
+
+      await db
+        .delete(actionlayerAuditEvents)
+        .where(eq(actionlayerAuditEvents.workflowId, agentId));
+
+      const [deleted] = await db
+        .delete(actionlayerWorkflows)
+        .where(eq(actionlayerWorkflows.id, agentId))
+        .returning();
+
+      res.json({
+        success: true,
+        deletedId: agentId,
+        existed: Boolean(deleted),
+      });
+    } catch (err) {
+      next(err);
+    }
+  },
+);
 
 // ==========================================
 // 5. TASKS & REQUIREMENT GRAPH

@@ -145,12 +145,14 @@ type AppContextValue = {
 
 const AppContext = createContext<AppContextValue | null>(null);
 const STORAGE_KEY = 'actionlayer-state-v6';
+const DELETED_AGENTS_KEY = 'actionlayer-deleted-agents-v1';
 const WALLPAPER_KEY = 'actionlayer-wallpaper-v2';
 
 export function AppProvider({ children }: { children: React.ReactNode }) {
   const [agents, setAgents] = useState<Agent[]>(initialAgents);
   const [activeAgentId, setActiveAgentId] = useState<string | null>(null);
   const [activities, setActivities] = useState<ActivityEvent[]>(initialActivities);
+  const [deletedAgentIds, setDeletedAgentIds] = useState<Set<string>>(new Set());
   const [isHydrated, setHydrated] = useState(false);
   const [theme, setTheme] = useState<'light' | 'dark'>('dark');
   const [customBg, setCustomBgState] = useState<string | null>(null);
@@ -185,16 +187,37 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     async function loadData() {
       let loadedAgents: Agent[] = [];
       let savedActiveId: string | null = null;
+      let deletedSet = new Set<string>();
+
       try {
+        // 1. Load tombstoned deleted agent IDs
+        try {
+          const delRaw = await AsyncStorage.getItem(DELETED_AGENTS_KEY);
+          if (delRaw) {
+            const parsedDel = JSON.parse(delRaw);
+            if (Array.isArray(parsedDel)) {
+              deletedSet = new Set(parsedDel);
+              setDeletedAgentIds(deletedSet);
+            }
+          }
+        } catch {
+          // ignore
+        }
+
+        // 2. Load stored agents and activities
         const raw = await AsyncStorage.getItem(STORAGE_KEY);
         if (raw) {
           const parsed = JSON.parse(raw);
-          if (parsed.agents && Array.isArray(parsed.agents) && parsed.agents.length > 0) {
-            loadedAgents = parsed.agents;
+          if (parsed.agents && Array.isArray(parsed.agents)) {
+            // Filter out any previously deleted agents
+            loadedAgents = parsed.agents.filter((a: Agent) => !deletedSet.has(a.id));
             savedActiveId = parsed.activeAgentId || null;
-            if (parsed.activities) setActivities(parsed.activities);
+          }
+          if (Array.isArray(parsed.activities)) {
+            setActivities(parsed.activities);
           }
         }
+
         const wpRaw = await AsyncStorage.getItem(WALLPAPER_KEY);
         if (wpRaw) {
           const wp = JSON.parse(wpRaw);
@@ -202,13 +225,18 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           if (wp.bgDim !== undefined) setBgDimState(wp.bgDim);
         }
 
-        // Fetch real agents from API database if local state is empty or needs refresh
+        // 3. Fetch real agents from API database (ignoring any deleted agent)
         try {
           const res = await fetch('http://localhost:5001/api/v1/agents');
           if (res.ok) {
             const apiData = await res.json();
             if (apiData.items && Array.isArray(apiData.items) && apiData.items.length > 0) {
               for (const item of apiData.items) {
+                // If user deleted this agent, NEVER revive it
+                if (deletedSet.has(item.id)) {
+                  continue;
+                }
+
                 const existingIdx = loadedAgents.findIndex((a) => a.id === item.id);
                 if (existingIdx >= 0) {
                   // Keep full local tasks and claims, but ensure deadline is true to db
@@ -269,10 +297,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           // Offline/local only
         }
 
-        if (loadedAgents.length > 0) {
-          setAgents(loadedAgents);
-          setActiveAgentId(savedActiveId || loadedAgents[0].id);
-        }
+        // Always set loaded agents even if empty, honoring user deletions
+        setAgents(loadedAgents);
+        const validActiveId =
+          savedActiveId && loadedAgents.some((a) => a.id === savedActiveId)
+            ? savedActiveId
+            : loadedAgents[0]?.id || null;
+        setActiveAgentId(validActiveId);
       } catch (err) {
         console.warn('Storage read error:', err);
       } finally {
@@ -293,16 +324,30 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const removeActivity = (activityId: string) => {
-    setActivities((current) => current.filter(a => a.id !== activityId));
+    setActivities((current) => {
+      const remaining = current.filter((a) => a.id !== activityId);
+      AsyncStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ agents, activeAgentId, activities: remaining })
+      ).catch(() => undefined);
+      return remaining;
+    });
   };
 
   const editActivity = (activityId: string, newTitle: string, newDetail: string) => {
-    setActivities((current) => current.map(a => {
-      if (a.id === activityId) {
-        return { ...a, title: newTitle, detail: newDetail };
-      }
-      return a;
-    }));
+    setActivities((current) => {
+      const updated = current.map((a) => {
+        if (a.id === activityId) {
+          return { ...a, title: newTitle, detail: newDetail };
+        }
+        return a;
+      });
+      AsyncStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ agents, activeAgentId, activities: updated })
+      ).catch(() => undefined);
+      return updated;
+    });
   };
 
   const isPrereqSatisfied = (taskId: string, tasks: Task[]) => {
@@ -363,14 +408,35 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const deleteAgent = (agentId: string) => {
-    setAgents((current) => current.filter((a) => a.id !== agentId));
-    if (activeAgentId === agentId) {
-      // We need to pick a new active agent, we'll let a useEffect handle it
-      // or we can just compute it directly here from the current state
-      // but since setState is async, it's better to just set it to null and let fallback handle it
-      // actually, just doing setActiveAgentId(null) is safe and the useMemo fallback will pick agents[0]
-      setActiveAgentId(null);
-    }
+    // 1. Add to tombstoned set & persist immediately
+    setDeletedAgentIds((prev) => {
+      const next = new Set(prev).add(agentId);
+      AsyncStorage.setItem(DELETED_AGENTS_KEY, JSON.stringify(Array.from(next))).catch(() => undefined);
+      return next;
+    });
+
+    // 2. Remove from agents & update active agent
+    setAgents((current) => {
+      const remaining = current.filter((a) => a.id !== agentId);
+      const nextActiveId = activeAgentId === agentId ? (remaining[0]?.id || null) : activeAgentId;
+      setActiveAgentId(nextActiveId);
+      AsyncStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ agents: remaining, activeAgentId: nextActiveId, activities })
+      ).catch(() => undefined);
+      return remaining;
+    });
+
+    // 3. Send DELETE request to backend database
+    fetch(`http://localhost:5001/api/v1/agents/${agentId}`, { method: 'DELETE' }).catch(() => undefined);
+
+    pushActivity({
+      id: `act-${Date.now()}`,
+      title: 'Agent deleted',
+      detail: 'Workflow removed from workspace.',
+      time: 'Just now',
+      tone: 'info',
+    });
   };
 
   const confirmClaim = (claimId: string, value?: string) => {
@@ -472,18 +538,25 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const removeClaim = (claimId: string) => {
-    setAgents((current) =>
-      current.map((ag) => {
-        if (ag.id !== activeAgentId) return ag;
+    setAgents((current) => {
+      const updated = current.map((ag) => {
+        const hasClaim = ag.claims.some((c) => c.id === claimId);
+        if (!hasClaim && ag.id !== activeAgentId) return ag;
         return { ...ag, claims: ag.claims.filter((c) => c.id !== claimId), lastUpdated: 'Just now' };
-      })
-    );
+      });
+      AsyncStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ agents: updated, activeAgentId, activities })
+      ).catch(() => undefined);
+      return updated;
+    });
   };
 
   const editTask = (taskId: string, newTitle: string, newDescription: string) => {
-    setAgents((current) =>
-      current.map((ag) => {
-        if (ag.id !== activeAgentId) return ag;
+    setAgents((current) => {
+      const updated = current.map((ag) => {
+        const hasTask = ag.tasks.some((t) => t.id === taskId);
+        if (!hasTask && ag.id !== activeAgentId) return ag;
         const newTasks = ag.tasks.map((t) => {
           if (t.id === taskId) {
             return { ...t, title: newTitle, description: newDescription };
@@ -491,14 +564,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           return t;
         });
         return { ...ag, tasks: resolveGraph(newTasks), lastUpdated: 'Just now' };
-      })
-    );
+      });
+      AsyncStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ agents: updated, activeAgentId, activities })
+      ).catch(() => undefined);
+      return updated;
+    });
   };
 
   const markClaimUnknown = (claimId: string) => {
-    setAgents((current) =>
-      current.map((ag) => {
-        if (ag.id !== activeAgentId) return ag;
+    setAgents((current) => {
+      const updated = current.map((ag) => {
+        const hasClaim = ag.claims.some((c) => c.id === claimId);
+        if (!hasClaim && ag.id !== activeAgentId) return ag;
         const updatedClaims = ag.claims.map((claim) =>
           claim.id === claimId
             ? {
@@ -510,8 +589,13 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
             : claim
         );
         return { ...ag, claims: updatedClaims, lastUpdated: 'Just now' };
-      })
-    );
+      });
+      AsyncStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ agents: updated, activeAgentId, activities })
+      ).catch(() => undefined);
+      return updated;
+    });
   };
 
   const startTask = (taskId: string) => {
