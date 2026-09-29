@@ -80,19 +80,25 @@ export default function ReviewScreen() {
   };
 
   const getStatusBadge = (claim: Claim) => {
+    if (claim.reviewed) {
+      if (claim.status === 'supplied_by_user') {
+        return <StatusBadge label="Supplied by you" tone="success" />;
+      }
+      return <StatusBadge label="Verified by you" tone="success" />;
+    }
     switch (claim.status) {
       case 'confirmed_from_source':
-        return <StatusBadge label="Confirmed from source" tone="success" />;
+        return <StatusBadge label="Grounded in source" tone="info" />;
       case 'supplied_by_user':
         return <StatusBadge label="Supplied by you" tone="success" />;
       case 'inferred_needs_review':
-        return <StatusBadge label="Needs review" tone="warning" />;
+        return <StatusBadge label="Inferred · Needs review" tone="warning" />;
       case 'missing':
         return <StatusBadge label="Missing from source" tone="risk" />;
       case 'conflicting':
         return <StatusBadge label="Conflicting" tone="risk" />;
       default:
-        return <StatusBadge label="Review" tone="warning" />;
+        return <StatusBadge label="Pending review" tone="warning" />;
     }
   };
 
@@ -160,14 +166,14 @@ export default function ReviewScreen() {
             <Feather name="alert-triangle" size={18} color={colors.warning} />
             <View style={{ flex: 1, gap: 6 }}>
               <Text style={[ui.captionStrong, { color: colors.foreground }]}>
-                {uncertain.length} item{uncertain.length === 1 ? '' : 's'} require human review
+                {uncertain.length} item{uncertain.length === 1 ? '' : 's'} awaiting your verification
               </Text>
               <Text style={[ui.caption, { color: colors.foreground }]}>
-                Human review is required before compilation into the Requirement Graph. Confirm or correct each item below.
+                AI extracted these facts with high OCR confidence. Human sign-off is required before deadlines and DAG milestones are activated.
               </Text>
               <Pressable onPress={handleConfirmAll} style={styles.confirmAllBtn}>
                 <Feather name="check-circle" size={14} color={colors.primary} />
-                <Text style={[ui.captionStrong, { color: colors.primary }]}>Confirm all remaining items</Text>
+                <Text style={[ui.captionStrong, { color: colors.primary }]}>Approve all remaining items</Text>
               </Pressable>
             </View>
           </View>
@@ -225,7 +231,11 @@ export default function ReviewScreen() {
                       styles.claimCard,
                       {
                         backgroundColor: colors.card,
-                        borderColor: !claim.reviewed || claim.status === 'inferred_needs_review' ? colors.warning : colors.border,
+                        borderColor: claim.reviewed
+                          ? colors.border
+                          : claim.status === 'inferred_needs_review' || claim.status === 'missing'
+                          ? colors.warning
+                          : colors.primary + '50',
                       },
                     ]}
                   >
@@ -246,7 +256,8 @@ export default function ReviewScreen() {
 
                     <View style={styles.claimFooter}>
                       <Text style={[ui.caption, { color: colors.mutedForeground }]}>
-                        Page {claim.sourcePage ?? 1} · Confidence: {Math.round(claim.confidence * 100)}%
+                        Page {claim.sourcePage ?? 1} · AI Confidence: {Math.round(claim.confidence * 100)}%
+                        {claim.reviewed ? ' · Verified' : ' · Awaiting your sign-off'}
                       </Text>
                     </View>
 
@@ -267,7 +278,7 @@ export default function ReviewScreen() {
                           style={styles.actionBtn}
                         >
                           <Feather name="check" size={14} color={colors.success} />
-                          <Text style={[ui.captionStrong, { color: colors.success }]}>Confirm</Text>
+                          <Text style={[ui.captionStrong, { color: colors.success }]}>Approve</Text>
                         </Pressable>
                       )}
 
