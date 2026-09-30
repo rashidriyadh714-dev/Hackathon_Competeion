@@ -6,6 +6,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import * as DocumentPicker from 'expo-document-picker';
 import { getProgress, getNextAction, useApp, type Task, type ReadinessAuditResult } from '@/context/AppContext';
 import { useColors } from '@/hooks/useColors';
+import { getApiBaseUrl } from '@/lib/api-config';
 import {
   BottomSheet,
   GlassCard,
@@ -132,7 +133,7 @@ export default function AgentDetailScreen() {
       formData.append('textValue', evidenceLabel);
       formData.append('userExplanation', evidenceExplanation);
 
-      const res = await fetch(`http://localhost:5001/api/v1/tasks/${evidenceTask.id}/evidence`, {
+      const res = await fetch(`${getApiBaseUrl()}/api/v1/tasks/${evidenceTask.id}/evidence`, {
         method: 'POST',
         body: formData,
       });

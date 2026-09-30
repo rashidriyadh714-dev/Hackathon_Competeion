@@ -1,5 +1,6 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { getApiBaseUrl } from '../lib/api-config';
 
 export type TaskStatus =
   | 'ready'
@@ -231,7 +232,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
         // 3. Fetch real agents from API database (ignoring any deleted agent)
         try {
-          const res = await fetch('http://localhost:5001/api/v1/agents');
+          const res = await fetch(`${getApiBaseUrl()}/api/v1/agents`);
           if (res.ok) {
             const apiData = await res.json();
             if (apiData.items && Array.isArray(apiData.items) && apiData.items.length > 0) {
@@ -254,7 +255,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
                   // Fetch tasks for this backend workflow
                   let dbTasks: Task[] = [];
                   try {
-                    const taskRes = await fetch(`http://localhost:5001/api/v1/agents/${item.id}/tasks`);
+                    const taskRes = await fetch(`${getApiBaseUrl()}/api/v1/agents/${item.id}/tasks`);
                     if (taskRes.ok) {
                       const tData = await taskRes.json();
                       if (Array.isArray(tData.items)) {
@@ -479,7 +480,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     });
 
     // 3. Send DELETE request to backend database
-    fetch(`http://localhost:5001/api/v1/agents/${agentId}`, { method: 'DELETE' }).catch(() => undefined);
+    fetch(`${getApiBaseUrl()}/api/v1/agents/${agentId}`, { method: 'DELETE' }).catch(() => undefined);
 
     pushActivity({
       id: `act-${Date.now()}`,

@@ -16,6 +16,8 @@
     "seed": "pnpm --filter @workspace/scripts run seed",
     "start:api": "pnpm --filter @workspace/api-server run dev",
     "start:mobile": "pnpm --filter @workspace/actionlayer-mobile run dev",
+    "start:gateway": "node ./scripts/mobile-gateway.mjs",
+    "start:tunnel": "cloudflared tunnel --url http://localhost:8082",
     "dev": "pnpm --filter @workspace/actionlayer-mobile run dev"
   },
   "private": true,

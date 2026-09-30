@@ -8,6 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { BottomSheet, GlassCard, PrimaryButton, SecondaryButton, StatusBadge, TextField, ui } from '@/components/actionlayer-ui';
 import { useColors } from '@/hooks/useColors';
 import { useApp, type Claim, type Task, type TaskStatus } from '@/context/AppContext';
+import { getApiBaseUrl } from '@/lib/api-config';
 
 export default function CaptureScreen() {
   const colors = useColors();
@@ -81,8 +82,8 @@ export default function CaptureScreen() {
         formData.append('text', filename || 'Competition Announcement Intake');
       }
 
-      console.log('[ActionLayer] Posting source to http://localhost:5001/api/v1/sources...');
-      const response = await fetch('http://localhost:5001/api/v1/sources', {
+      console.log(`[ActionLayer] Posting source to ${getApiBaseUrl()}/api/v1/sources...`);
+      const response = await fetch(`${getApiBaseUrl()}/api/v1/sources`, {
         method: 'POST',
         body: formData,
       });
