@@ -1,9 +1,7 @@
-# Screenshots Directory
+# Application Screenshots
 
-Drop your 4 application screenshots into this folder so they appear properly in the `DEVPOST_SUBMISSION.md`. 
+- `home.png` — Main dashboard & active next actions
+- `capture.png` — Document intake & multimodal extraction
+- `roadmap.png` — Interactive DAG requirement graph & dependency unblocking
+- `paywall.png` — Pro membership & RevenueCat monetization
 
-Please name your image files exactly as follows:
-- `home.png`
-- `capture.png`
-- `roadmap.png`
-- `paywall.png`
