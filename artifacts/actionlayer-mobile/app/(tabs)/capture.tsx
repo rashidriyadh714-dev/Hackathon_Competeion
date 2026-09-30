@@ -160,14 +160,17 @@ export default function CaptureScreen() {
             .map((depTitle: string) => taskTitleToId[depTitle])
             .filter(Boolean);
         }
-        const isRoot = depIds.length === 0;
+        // If an extracted downstream task has no explicit dependency, chain to previous task in sequence
+        if (i > 0 && depIds.length === 0) {
+          depIds = [`task-${i}`];
+        }
         return {
           id: taskId,
           title: t.title,
           description: t.description,
           category: t.category || 'General',
           priority: t.priority || 'medium',
-          status: isRoot ? ('ready' as TaskStatus) : ('blocked' as TaskStatus),
+          status: i === 0 ? ('ready' as TaskStatus) : ('blocked' as TaskStatus),
           estimatedMinutes: t.estimatedMinutes || 30,
           dependencyIds: depIds,
           completionCondition: t.completionCondition || 'Satisfy requirements',

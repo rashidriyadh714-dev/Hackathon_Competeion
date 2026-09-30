@@ -373,20 +373,24 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     executionMode: 'sequential' | 'parallel' = 'sequential'
   ): Task[] => {
     if (executionMode === 'sequential') {
-      const sorted = [...tasks].sort((a, b) => (a.sequenceNumber ?? 0) - (b.sequenceNumber ?? 0));
-      let foundActive = false;
+      const sorted = [...tasks].sort((a, b) => {
+        const seqA = a.sequenceNumber ?? 0;
+        const seqB = b.sequenceNumber ?? 0;
+        if (seqA !== seqB) return seqA - seqB;
+        return a.id.localeCompare(b.id);
+      });
+
+      // Find the single active task: the first task that is not completed or verified
+      const firstIncompleteIdx = sorted.findIndex(
+        (t) => t.status !== 'completed_by_user' && t.status !== 'verified'
+      );
 
       return sorted.map((task, idx) => {
         if (task.status === 'completed_by_user' || task.status === 'verified') {
           return task;
         }
 
-        const prevTasks = sorted.slice(0, idx);
-        const prevAllDone = prevTasks.every((p) => p.status === 'completed_by_user' || p.status === 'verified');
-        const explicitDepsDone = task.dependencyIds.every((depId) => isPrereqSatisfied(depId, tasks));
-
-        if (!foundActive && prevAllDone && explicitDepsDone) {
-          foundActive = true;
+        if (idx === firstIncompleteIdx) {
           return {
             ...task,
             status: task.status === 'in_progress' ? ('in_progress' as TaskStatus) : ('ready' as TaskStatus),
@@ -425,6 +429,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const newId = newAgentData.id || `agent-${Date.now()}`;
     const mode = newAgentData.executionMode || 'sequential';
     const newAgent: Agent = {
+      ...newAgentData,
       id: newId,
       title: newAgentData.title || 'New Agent',
       organizer: newAgentData.organizer || 'Unknown Organizer',
@@ -435,10 +440,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       sourceLabel: newAgentData.sourceLabel || 'Uploaded Source',
       sourceType: newAgentData.sourceType || 'Text',
       claims: newAgentData.claims || [],
-      tasks: resolveGraph(newAgentData.tasks || [], mode),
       evidence: newAgentData.evidence || [],
-      ...newAgentData,
       executionMode: mode,
+      tasks: resolveGraph(newAgentData.tasks || [], mode),
       isDemo: false,
       lastUpdated: 'Just now',
     };
@@ -884,6 +888,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     const newId = data.id || `agent-${Date.now()}`;
     const mode = data.executionMode || 'sequential';
     const newAgent: Agent = {
+      ...data,
       id: newId,
       title: data.title || 'Extracted Agent',
       organizer: data.organizer || 'Unknown Organizer',
@@ -893,10 +898,9 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       sourceLabel: data.sourceLabel || 'Uploaded Source',
       sourceType: data.sourceType || 'Text',
       claims: data.claims || [],
-      tasks: resolveGraph(data.tasks || [], mode),
       evidence: data.evidence || [],
-      ...data,
       executionMode: mode,
+      tasks: resolveGraph(data.tasks || [], mode),
       status: 'review_required',
       isDemo: false,
       lastUpdated: 'Just now',

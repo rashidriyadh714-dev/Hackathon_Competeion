@@ -1185,50 +1185,38 @@ function GraphTab({
               <Text style={[ui.captionStrong, { color: colors.foreground }]}>
                 {isSequential
                   ? 'Strict Sequential Mode: 1 Task Ready at a time'
-                  : `DAG Parallel Roots: ${readyTasks.length} Tasks Ready Simultaneously`}
+                  : `DAG Parallel Mode: ${readyTasks.length} Tasks Ready Simultaneously`}
               </Text>
             </View>
             <StatusBadge
-              label={isSequential ? '1 Task Ready' : `${readyTasks.length} Tasks Ready`}
+              label={isSequential ? `Task ${String(currentActiveTask?.sequenceNumber ?? 1).padStart(2, '0')} Ready` : `${readyTasks.length} Tasks Ready`}
               tone={isSequential ? 'success' : 'info'}
             />
           </View>
 
           <Text style={[ui.caption, { color: colors.mutedForeground, marginTop: 4, lineHeight: 18 }]}>
             {isSequential
-              ? `Tasks are executed in strict numerical sequence (01 → 02 → 03...). Task ${String(currentActiveTask?.sequenceNumber ?? 1).padStart(2, '0')} ("${currentActiveTask?.title ?? 'First Task'}") is currently active. Downstream tasks unlock automatically one-by-one as each task finishes.`
-              : `Tasks ${readyTasks.map((t) => String(t.sequenceNumber ?? 0).padStart(2, '0')).join(', ')} currently have no prerequisites and can be executed in parallel. If you want only 1 task ready at a time, switch to Strict Sequential mode.`}
+              ? `Tasks execute strictly in order (01 → 02 → 03...). Task ${String(currentActiveTask?.sequenceNumber ?? 1).padStart(2, '0')} ("${currentActiveTask?.title ?? 'Active Task'}") is currently ready. Downstream tasks unlock automatically one-by-one as each prerequisite completes.`
+              : `Tasks ${readyTasks.map((t) => String(t.sequenceNumber ?? 0).padStart(2, '0')).join(', ')} currently have no prerequisites and can be worked on concurrently by team members.`}
           </Text>
 
-          <Pressable
-            onPress={() => onSetExecutionMode(isSequential ? 'parallel' : 'sequential')}
-            style={[
-              styles.linkBtn,
-              {
-                backgroundColor: isSequential ? colors.secondary : colors.primary,
-                marginTop: 6,
-              },
-            ]}
-          >
-            <Feather
-              name={isSequential ? 'git-branch' : 'lock'}
-              size={13}
-              color={isSequential ? colors.foreground : colors.primaryForeground}
-            />
-            <Text
+          {!isSequential && (
+            <Pressable
+              onPress={() => onSetExecutionMode('sequential')}
               style={[
-                ui.captionStrong,
+                styles.linkBtn,
                 {
-                  color: isSequential ? colors.foreground : colors.primaryForeground,
-                  fontSize: 12,
+                  backgroundColor: colors.primary,
+                  marginTop: 6,
                 },
               ]}
             >
-              {isSequential
-                ? 'Switch to Parallel DAG (Allow Team Collaboration)'
-                : 'Enforce Strict Sequential Order (Only 1 Task Ready at a time)'}
-            </Text>
-          </Pressable>
+              <Feather name="lock" size={13} color={colors.primaryForeground} />
+              <Text style={[ui.captionStrong, { color: colors.primaryForeground, fontSize: 12 }]}>
+                Enforce Strict Sequential Order (Only 1 Task Ready at a time)
+              </Text>
+            </Pressable>
+          )}
         </View>
       </View>
 
