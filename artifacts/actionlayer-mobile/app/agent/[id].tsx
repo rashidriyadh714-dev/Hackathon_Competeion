@@ -33,6 +33,7 @@ export default function AgentDetailScreen() {
     runAudit,
     editTask: editTaskAction,
     setTaskPrerequisites,
+    setAgentExecutionMode,
   } = useApp();
   const [tab, setTab] = useState<'overview' | 'graph' | 'evidence' | 'sources'>('overview');
   const [detailTask, setDetailTask] = useState<Task | null>(null);
@@ -248,6 +249,7 @@ export default function AgentDetailScreen() {
                 setTaskPrerequisites(taskId, t.dependencyIds.filter((id) => id !== prereqId));
               }
             }}
+            onSetExecutionMode={(mode) => setAgentExecutionMode(agent.id, mode)}
           />
         )}
 
@@ -842,6 +844,7 @@ function GraphTab({
   onEdit,
   onLinkPrereq,
   onRemovePrereq,
+  onSetExecutionMode,
 }: {
   agent: import('@/context/AppContext').Agent;
   onStart: (id: string) => void;
@@ -851,6 +854,7 @@ function GraphTab({
   onEdit: (task: Task) => void;
   onLinkPrereq: (taskId: string, prereqId: string) => void;
   onRemovePrereq: (taskId: string, prereqId: string) => void;
+  onSetExecutionMode: (mode: 'sequential' | 'parallel') => void;
 }) {
   const colors = useColors();
   const [filter, setFilter] = useState<'all' | 'ready' | 'blocked' | 'in_progress' | 'complete'>('all');
@@ -858,10 +862,12 @@ function GraphTab({
   const next = getNextAction(agent);
   const nextIsBlocked = Boolean(next.blockedTask);
 
-  const task01 = agent.tasks.find((t) => t.sequenceNumber === 1);
-  const task02 = agent.tasks.find((t) => t.sequenceNumber === 2);
-  const task02Requires01 = Boolean(task01 && task02 && task02.dependencyIds.includes(task01.id));
-  const readyTasks = agent.tasks.filter((t) => t.status === 'ready');
+  const executionMode = agent.executionMode || 'sequential';
+  const isSequential = executionMode === 'sequential';
+  const readyTasks = agent.tasks.filter((t) => t.status === 'ready' || t.status === 'in_progress');
+  const currentActiveTask = [...agent.tasks]
+    .sort((a, b) => (a.sequenceNumber ?? 0) - (b.sequenceNumber ?? 0))
+    .find((t) => t.status === 'in_progress' || t.status === 'ready');
 
   const filterCounts = useMemo(() => ({
     all: agent.tasks.length,
@@ -905,6 +911,13 @@ function GraphTab({
     const prereqTasks = task.dependencyIds
       .map((id) => agent.tasks.find((t) => t.id === id))
       .filter(Boolean) as Task[];
+
+    const prevTask = agent.tasks.find((t) => (t.sequenceNumber ?? 0) === (task.sequenceNumber ?? 1) - 1);
+    const prereqNames = prereqTasks.length > 0
+      ? prereqTasks.map((p) => `"${p.title}"`).join(', ')
+      : prevTask
+      ? `"${prevTask.title}"`
+      : 'Upstream task';
 
     return (
       <Pressable
@@ -960,7 +973,7 @@ function GraphTab({
         <Text style={[styles.taskDesc, { color: colors.foreground }]}>{task.description}</Text>
 
         {/* Dependency information */}
-        {task.dependencyIds.length > 0 && (
+        {(task.dependencyIds.length > 0 || (isSequential && isBlocked)) && (
           <View style={[styles.prereqBox, { backgroundColor: isBlocked ? colors.warning + '20' : colors.secondary }]}>
             <Feather
               name={isBlocked ? 'lock' : 'unlock'}
@@ -969,7 +982,7 @@ function GraphTab({
             />
             <Text style={[ui.caption, { color: colors.foreground, flex: 1 }]}>
               {isBlocked ? 'Prerequisite required: ' : 'Prerequisites satisfied: '}
-              {prereqTasks.map((p) => `"${p.title}"`).join(', ')}
+              {prereqNames}
             </Text>
           </View>
         )}
@@ -1017,7 +1030,7 @@ function GraphTab({
     <View style={styles.section}>
       <SectionHeader title={`Requirement Graph (${agent.tasks.length} Tasks)`} />
       <Text style={[ui.caption, { color: colors.mutedForeground }]}>
-        Deterministic DAG solver: a task remains strictly blocked until all required prerequisites reach a verified state. Independent root tasks are Ready to start simultaneously in parallel.
+        Deterministic DAG solver: a task remains strictly blocked until all required prerequisites reach a verified state.
       </Text>
 
       {/* Filter pills & View Mode Row */}
@@ -1103,79 +1116,120 @@ function GraphTab({
           </View>
         </View>
 
-        {/* DAG Root Status Explanation & Flow Mode Switcher */}
-        {task01 && task02 && (
-          <View
-            style={[
-              styles.dagNoticeCard,
-              {
-                backgroundColor: colors.card,
-                borderColor: task02Requires01 ? colors.success + '40' : colors.border,
-              },
-            ]}
-          >
-            <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
-              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
-                <Feather
-                  name={task02Requires01 ? 'check-circle' : 'git-branch'}
-                  size={16}
-                  color={task02Requires01 ? colors.success : colors.primary}
-                />
-                <Text style={[ui.captionStrong, { color: colors.foreground }]}>
-                  {task02Requires01
-                    ? 'Strict Sequential Flow: Only Task 01 is Ready'
-                    : `DAG Parallel Roots: ${readyTasks.length} Tasks Ready Simultaneously`}
-                </Text>
-              </View>
-              <StatusBadge
-                label={task02Requires01 ? '1 Task Ready' : '2 Tasks Ready'}
-                tone={task02Requires01 ? 'success' : 'info'}
-              />
-            </View>
-
-            <Text style={[ui.caption, { color: colors.mutedForeground, marginTop: 4, lineHeight: 18 }]}>
-              {task02Requires01
-                ? 'Task 02 is blocked because it requires Task 01 ("Resolve Deadline and Instruction Conflicts") to be completed first.'
-                : 'Tasks 01 and 02 both have no prerequisites, allowing team members to execute them in parallel. Since Task 01 resolves conflicts before downstream work, you can lock Task 02 until Task 01 completes.'}
-            </Text>
-
+        {/* Execution Flow Switcher: Strict Sequential vs Parallel DAG */}
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: 2 }}>
+          <Text style={[ui.caption, { color: colors.mutedForeground }]}>Execution Flow:</Text>
+          <View style={{ flexDirection: 'row', gap: 6, backgroundColor: colors.secondary, borderRadius: 10, padding: 3 }}>
             <Pressable
-              onPress={() => {
-                if (task02Requires01) {
-                  onRemovePrereq(task02.id, task01.id);
-                } else {
-                  onLinkPrereq(task02.id, task01.id);
-                }
+              onPress={() => onSetExecutionMode('sequential')}
+              style={{
+                paddingHorizontal: 12,
+                paddingVertical: 5,
+                borderRadius: 8,
+                backgroundColor: isSequential ? colors.primary : 'transparent',
               }}
-              style={[
-                styles.linkBtn,
-                {
-                  backgroundColor: task02Requires01 ? colors.secondary : colors.primary,
-                  marginTop: 6,
-                },
-              ]}
             >
-              <Feather
-                name={task02Requires01 ? 'git-branch' : 'lock'}
-                size={13}
-                color={task02Requires01 ? colors.foreground : colors.primaryForeground}
-              />
               <Text
                 style={[
                   ui.captionStrong,
                   {
-                    color: task02Requires01 ? colors.foreground : colors.primaryForeground,
-                    fontSize: 12,
+                    color: isSequential ? colors.primaryForeground : colors.foreground,
+                    fontFamily: 'Inter_600SemiBold',
                   },
                 ]}
               >
-                {task02Requires01
-                  ? 'Switch to Parallel Mode (01 & 02 both Ready)'
-                  : 'Require Task 01 Before Task 02 (Only 1 Ready)'}
+                Strict Sequential (1 at a time)
+              </Text>
+            </Pressable>
+            <Pressable
+              onPress={() => onSetExecutionMode('parallel')}
+              style={{
+                paddingHorizontal: 12,
+                paddingVertical: 5,
+                borderRadius: 8,
+                backgroundColor: !isSequential ? colors.primary : 'transparent',
+              }}
+            >
+              <Text
+                style={[
+                  ui.captionStrong,
+                  {
+                    color: !isSequential ? colors.primaryForeground : colors.foreground,
+                    fontFamily: 'Inter_600SemiBold',
+                  },
+                ]}
+              >
+                Parallel DAG
               </Text>
             </Pressable>
           </View>
-        )}
+        </View>
+
+        {/* Dynamic Status Callout Banner */}
+        <View
+          style={[
+            styles.dagNoticeCard,
+            {
+              backgroundColor: colors.card,
+              borderColor: isSequential ? colors.success + '40' : colors.border,
+            },
+          ]}
+        >
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1 }}>
+              <Feather
+                name={isSequential ? 'check-circle' : 'git-branch'}
+                size={16}
+                color={isSequential ? colors.success : colors.primary}
+              />
+              <Text style={[ui.captionStrong, { color: colors.foreground }]}>
+                {isSequential
+                  ? 'Strict Sequential Mode: 1 Task Ready at a time'
+                  : `DAG Parallel Roots: ${readyTasks.length} Tasks Ready Simultaneously`}
+              </Text>
+            </View>
+            <StatusBadge
+              label={isSequential ? '1 Task Ready' : `${readyTasks.length} Tasks Ready`}
+              tone={isSequential ? 'success' : 'info'}
+            />
+          </View>
+
+          <Text style={[ui.caption, { color: colors.mutedForeground, marginTop: 4, lineHeight: 18 }]}>
+            {isSequential
+              ? `Tasks are executed in strict numerical sequence (01 → 02 → 03...). Task ${String(currentActiveTask?.sequenceNumber ?? 1).padStart(2, '0')} ("${currentActiveTask?.title ?? 'First Task'}") is currently active. Downstream tasks unlock automatically one-by-one as each task finishes.`
+              : `Tasks ${readyTasks.map((t) => String(t.sequenceNumber ?? 0).padStart(2, '0')).join(', ')} currently have no prerequisites and can be executed in parallel. If you want only 1 task ready at a time, switch to Strict Sequential mode.`}
+          </Text>
+
+          <Pressable
+            onPress={() => onSetExecutionMode(isSequential ? 'parallel' : 'sequential')}
+            style={[
+              styles.linkBtn,
+              {
+                backgroundColor: isSequential ? colors.secondary : colors.primary,
+                marginTop: 6,
+              },
+            ]}
+          >
+            <Feather
+              name={isSequential ? 'git-branch' : 'lock'}
+              size={13}
+              color={isSequential ? colors.foreground : colors.primaryForeground}
+            />
+            <Text
+              style={[
+                ui.captionStrong,
+                {
+                  color: isSequential ? colors.foreground : colors.primaryForeground,
+                  fontSize: 12,
+                },
+              ]}
+            >
+              {isSequential
+                ? 'Switch to Parallel DAG (Allow Team Collaboration)'
+                : 'Enforce Strict Sequential Order (Only 1 Task Ready at a time)'}
+            </Text>
+          </Pressable>
+        </View>
       </View>
 
       {/* Render tasks */}

@@ -87,6 +87,7 @@ export type Agent = {
   evidence: Evidence[];
   isDemo?: boolean;
   lastUpdated: string;
+  executionMode?: 'sequential' | 'parallel';
 };
 
 export type ActivityEvent = {
@@ -128,6 +129,7 @@ type AppContextValue = {
   markClaimUnknown: (claimId: string) => void;
   editTask: (taskId: string, newTitle: string, newDescription: string, newDependencyIds?: string[]) => void;
   setTaskPrerequisites: (taskId: string, dependencyIds: string[]) => void;
+  setAgentExecutionMode: (agentId: string, mode: 'sequential' | 'parallel') => void;
   enforceSequentialExecution: (agentId: string, enabled: boolean) => void;
   removeActivity: (activityId: string) => void;
   editActivity: (activityId: string, newTitle: string, newDetail: string) => void;
@@ -299,12 +301,20 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           // Offline/local only
         }
 
-        // Always set loaded agents even if empty, honoring user deletions
-        setAgents(loadedAgents);
+        // Always set loaded agents even if empty, normalizing task statuses to executionMode (default: sequential)
+        const normalizedAgents = loadedAgents.map((ag) => {
+          const mode = ag.executionMode || 'sequential';
+          return {
+            ...ag,
+            executionMode: mode,
+            tasks: resolveGraph(ag.tasks, mode),
+          };
+        });
+        setAgents(normalizedAgents);
         const validActiveId =
-          savedActiveId && loadedAgents.some((a) => a.id === savedActiveId)
+          savedActiveId && normalizedAgents.some((a) => a.id === savedActiveId)
             ? savedActiveId
-            : loadedAgents[0]?.id || null;
+            : normalizedAgents[0]?.id || null;
         setActiveAgentId(validActiveId);
       } catch (err) {
         console.warn('Storage read error:', err);
@@ -357,17 +367,50 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     return task?.status === 'completed_by_user' || task?.status === 'verified';
   };
 
-  // Deterministic DAG dependency solver
-  const resolveGraph = (tasks: Task[]): Task[] => {
+  // Deterministic DAG dependency solver with support for Strict Sequential and Parallel DAG modes
+  const resolveGraph = (
+    tasks: Task[],
+    executionMode: 'sequential' | 'parallel' = 'sequential'
+  ): Task[] => {
+    if (executionMode === 'sequential') {
+      const sorted = [...tasks].sort((a, b) => (a.sequenceNumber ?? 0) - (b.sequenceNumber ?? 0));
+      let foundActive = false;
+
+      return sorted.map((task, idx) => {
+        if (task.status === 'completed_by_user' || task.status === 'verified') {
+          return task;
+        }
+
+        const prevTasks = sorted.slice(0, idx);
+        const prevAllDone = prevTasks.every((p) => p.status === 'completed_by_user' || p.status === 'verified');
+        const explicitDepsDone = task.dependencyIds.every((depId) => isPrereqSatisfied(depId, tasks));
+
+        if (!foundActive && prevAllDone && explicitDepsDone) {
+          foundActive = true;
+          return {
+            ...task,
+            status: task.status === 'in_progress' ? ('in_progress' as TaskStatus) : ('ready' as TaskStatus),
+          };
+        } else {
+          return { ...task, status: 'blocked' as TaskStatus };
+        }
+      });
+    }
+
+    // Parallel DAG mode: tasks with all explicit prerequisites satisfied are ready
     return tasks.map((task) => {
-      const allPrereqsDone = task.dependencyIds.every((depId) => isPrereqSatisfied(depId, tasks));
-      if (task.status === 'blocked' && allPrereqsDone) {
-        return { ...task, status: 'ready' as TaskStatus };
+      if (task.status === 'completed_by_user' || task.status === 'verified') {
+        return task;
       }
-      if ((task.status === 'ready' || task.status === 'in_progress') && !allPrereqsDone && task.dependencyIds.length > 0) {
+      const allPrereqsDone = task.dependencyIds.every((depId) => isPrereqSatisfied(depId, tasks));
+      if (allPrereqsDone) {
+        return {
+          ...task,
+          status: task.status === 'in_progress' ? ('in_progress' as TaskStatus) : ('ready' as TaskStatus),
+        };
+      } else {
         return { ...task, status: 'blocked' as TaskStatus };
       }
-      return task;
     });
   };
 
@@ -380,6 +423,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const createAgent = (newAgentData: Partial<Agent>): string => {
     const newId = newAgentData.id || `agent-${Date.now()}`;
+    const mode = newAgentData.executionMode || 'sequential';
     const newAgent: Agent = {
       id: newId,
       title: newAgentData.title || 'New Agent',
@@ -391,9 +435,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       sourceLabel: newAgentData.sourceLabel || 'Uploaded Source',
       sourceType: newAgentData.sourceType || 'Text',
       claims: newAgentData.claims || [],
-      tasks: newAgentData.tasks || [],
+      tasks: resolveGraph(newAgentData.tasks || [], mode),
       evidence: newAgentData.evidence || [],
       ...newAgentData,
+      executionMode: mode,
       isDemo: false,
       lastUpdated: 'Just now',
     };
@@ -575,7 +620,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           }
           return t;
         });
-        return { ...ag, tasks: resolveGraph(newTasks), lastUpdated: 'Just now' };
+        return {
+          ...ag,
+          tasks: resolveGraph(newTasks, ag.executionMode || 'sequential'),
+          lastUpdated: 'Just now',
+        };
       });
       AsyncStorage.setItem(
         STORAGE_KEY,
@@ -596,7 +645,30 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
           }
           return t;
         });
-        return { ...ag, tasks: resolveGraph(newTasks), lastUpdated: 'Just now' };
+        return {
+          ...ag,
+          tasks: resolveGraph(newTasks, ag.executionMode || 'sequential'),
+          lastUpdated: 'Just now',
+        };
+      });
+      AsyncStorage.setItem(
+        STORAGE_KEY,
+        JSON.stringify({ agents: updated, activeAgentId, activities })
+      ).catch(() => undefined);
+      return updated;
+    });
+  };
+
+  const setAgentExecutionMode = (agentId: string, mode: 'sequential' | 'parallel') => {
+    setAgents((current) => {
+      const updated = current.map((ag) => {
+        if (ag.id !== agentId) return ag;
+        return {
+          ...ag,
+          executionMode: mode,
+          tasks: resolveGraph(ag.tasks, mode),
+          lastUpdated: 'Just now',
+        };
       });
       AsyncStorage.setItem(
         STORAGE_KEY,
@@ -607,38 +679,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   };
 
   const enforceSequentialExecution = (agentId: string, enabled: boolean) => {
-    setAgents((current) => {
-      const updated = current.map((ag) => {
-        if (ag.id !== agentId) return ag;
-        const sorted = [...ag.tasks].sort((a, b) => (a.sequenceNumber ?? 0) - (b.sequenceNumber ?? 0));
-        let newTasks: Task[];
-        if (enabled) {
-          // In strict sequential mode, each task i requires task i-1 to be completed first
-          newTasks = sorted.map((t, idx) => {
-            if (idx === 0) {
-              return { ...t, dependencyIds: [] };
-            }
-            const prevTask = sorted[idx - 1];
-            const deps = Array.from(new Set([...t.dependencyIds, prevTask.id]));
-            return { ...t, dependencyIds: deps };
-          });
-        } else {
-          // When toggled off, if task 02 only has task 01 as prereq because of sequential mode, unchain it
-          newTasks = sorted.map((t, idx) => {
-            if (idx === 1 && sorted[0]) {
-              return { ...t, dependencyIds: t.dependencyIds.filter((id) => id !== sorted[0].id) };
-            }
-            return t;
-          });
-        }
-        return { ...ag, tasks: resolveGraph(newTasks), lastUpdated: 'Just now' };
-      });
-      AsyncStorage.setItem(
-        STORAGE_KEY,
-        JSON.stringify({ agents: updated, activeAgentId, activities })
-      ).catch(() => undefined);
-      return updated;
-    });
+    setAgentExecutionMode(agentId, enabled ? 'sequential' : 'parallel');
   };
 
   const markClaimUnknown = (claimId: string) => {
@@ -690,7 +731,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       current.map((ag) => {
         if (ag.id !== activeAgentId) return ag;
         const rawTasks = ag.tasks.map((t) => (t.id === taskId ? { ...t, status: 'completed_by_user' as TaskStatus } : t));
-        const resolvedTasks = resolveGraph(rawTasks);
+        const resolvedTasks = resolveGraph(rawTasks, ag.executionMode || 'sequential');
         return { ...ag, tasks: resolvedTasks, lastUpdated: 'Just now' };
       })
     );
@@ -741,7 +782,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
         if (ag.id !== activeAgentId) return ag;
         const updatedEvidence = [...ag.evidence.filter((e) => e.taskId !== taskId), newEvidence];
         const rawTasks = ag.tasks.map((t) => (t.id === taskId ? { ...t, status: 'verified' as TaskStatus, evidenceId } : t));
-        const resolvedTasks = resolveGraph(rawTasks);
+        const resolvedTasks = resolveGraph(rawTasks, ag.executionMode || 'sequential');
         return { ...ag, evidence: updatedEvidence, tasks: resolvedTasks, lastUpdated: 'Just now' };
       })
     );
@@ -841,6 +882,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
 
   const setExtractedAgent = (data: Partial<Agent>) => {
     const newId = data.id || `agent-${Date.now()}`;
+    const mode = data.executionMode || 'sequential';
     const newAgent: Agent = {
       id: newId,
       title: data.title || 'Extracted Agent',
@@ -851,9 +893,10 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       sourceLabel: data.sourceLabel || 'Uploaded Source',
       sourceType: data.sourceType || 'Text',
       claims: data.claims || [],
-      tasks: data.tasks || [],
+      tasks: resolveGraph(data.tasks || [], mode),
       evidence: data.evidence || [],
       ...data,
+      executionMode: mode,
       status: 'review_required',
       isDemo: false,
       lastUpdated: 'Just now',
@@ -894,6 +937,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
       markClaimUnknown,
       editTask,
       setTaskPrerequisites,
+      setAgentExecutionMode,
       enforceSequentialExecution,
       removeActivity,
       editActivity,
@@ -932,24 +976,20 @@ export function getProgress(agent: Agent) {
   return total === 0 ? 0 : Math.round((complete / total) * 100);
 }
 
-export function getNextAction(agent: Agent) {
-  // Check if any high priority task is blocked by a prerequisite
-  const blocked = agent.tasks.find((task) => task.status === 'blocked');
-  if (blocked) {
-    const dependency = agent.tasks.find(
-      (task) => blocked.dependencyIds.includes(task.id) && task.status !== 'completed_by_user' && task.status !== 'verified'
-    );
-    if (dependency) {
-      return { task: dependency, blockedTask: blocked };
-    }
-  }
-  const nextReady = agent.tasks.find(
-    (task) =>
-      (task.status === 'ready' || task.status === 'in_progress') &&
-      task.dependencyIds.every((id) => {
-        const candidate = agent.tasks.find((c) => c.id === id);
-        return candidate?.status === 'completed_by_user' || candidate?.status === 'verified';
-      })
-  );
-  return { task: nextReady ?? agent.tasks[0], blockedTask: undefined };
+export function getNextAction(agent: Agent): { task: Task; blockedTask?: Task } {
+  const sortedTasks = [...agent.tasks].sort((a, b) => (a.sequenceNumber ?? 0) - (b.sequenceNumber ?? 0));
+
+  // 1. If any task is currently in progress, that takes highest priority
+  const inProg = sortedTasks.find((t) => t.status === 'in_progress');
+  if (inProg) return { task: inProg, blockedTask: undefined };
+
+  // 2. Identify the first blocked task if any downstream tasks are waiting
+  const firstBlocked = sortedTasks.find((t) => t.status === 'blocked');
+
+  // 3. Next ready task in sequence order
+  const nextReady = sortedTasks.find((t) => t.status === 'ready');
+  if (nextReady) return { task: nextReady, blockedTask: firstBlocked };
+
+  // 4. Fallback
+  return { task: (agent.tasks[0] || sortedTasks[0] || {}) as Task, blockedTask: firstBlocked };
 }
