@@ -1,17 +1,17 @@
 # ActionLayer
 
-> **Autonomous Opportunity Execution Agent**  
+> **Source-Grounded Agentic Action Compiler**  
 > *Shipaton 2026 Next Gen Award Submission*  
 > *Built by Rashid Riyadh & Team*  
-> Licensed under Apache-2.0 · 100% Open Source · Locally Executable
+> Licensed under Apache-2.0 · Open Source · Locally Executable
 
 ---
 
-## What is ActionLayer?
+## What Is ActionLayer?
 
-**ActionLayer** is a source-grounded, mobile-first autonomous workflow agent that compiles unstructured real-world opportunity documents—such as competition posters, hackathon briefs, grant calls, and assignment rubrics—into deterministic, verifiable Directed Acyclic Graph (DAG) requirement trees.
+**ActionLayer** is a source-grounded, mobile-first agentic workflow application that transforms complex opportunity documents—such as competition posters, hackathon briefs, grant calls, and assignment rubrics—into human-reviewed claims, dependency-aware tasks, and explainable readiness audits.
 
-Instead of generic chat summaries or disjointed todo lists, ActionLayer answers two questions:
+Instead of generic chat summaries or disjointed todo lists, ActionLayer answers two core questions:
 1. **"What is the exact next requirement I can work on without being blocked?"**
 2. **"What verifiable evidence will prove this requirement is genuinely complete?"**
 
@@ -20,7 +20,7 @@ Instead of generic chat summaries or disjointed todo lists, ActionLayer answers 
 ## Who It Helps
 
 - **Students & Early-Career Builders:** Navigating complex competition rules, hackathons, and fellowship applications with strict submission criteria, deadlines, and multi-step prerequisites.
-- **Independent Developers & Researchers:** Applying for open grants and submitting technical projects where missing a single deliverable (such as an open-source license or demo video length) leads to disqualification.
+- **Independent Developers & Researchers:** Applying for open grants and submitting technical projects where missing a single deliverable (such as an open-source license, demo video length, or declaration form) leads to disqualification.
 - **Small Teams & Builders:** Managing overwhelming multi-page announcement posters and unstructured PDFs without missing fine-print requirements.
 
 ---
@@ -28,11 +28,12 @@ Instead of generic chat summaries or disjointed todo lists, ActionLayer answers 
 ## Why It Matters
 
 Most AI productivity tools generate text that looks plausible but hallucinate deadlines, fabricate requirements, and leave applicants uncertain of what has actually been verified. ActionLayer solves this with:
-- **Source Grounding:** Every extracted claim remains linked to its exact excerpt and page in the preserved original document.
-- **Human Review Gates:** Uncertain dates, unstated timezones, or ambiguous terms are explicitly flagged for human confirmation before compiling into tasks.
-- **Deterministic DAG Scheduling:** Task dependencies, prerequisite blockers, and next-action calculations run in strict application logic—not unpredictable AI prompts.
-- **Multi-Level Evidence Verification:** Distinguishes self-declarations (Level 1) and attached artifacts (Level 2) from AI-assisted rubric assessments (Level 3), never pretending to be official institutional certification.
-- **Four-Factor Readiness Auditing:** Separate transparency into requirements completion, evidence readiness, source trust, and deadline risk.
+
+- **Source Grounding:** Every extracted claim remains linked to its exact excerpt and page reference in the preserved original source document.
+- **Human-in-the-Loop Review Gates:** Uncertain dates, unstated timezones, or ambiguous terms are explicitly flagged for human confirmation before compiling into tasks.
+- **Deterministic DAG Scheduling:** Task dependencies, prerequisite blockers, and next-action calculations run in deterministic application logic—not unpredictable generative prompts.
+- **Multi-Level Evidence Verification:** Distinguishes self-declarations (Level 1) and attached artifacts (Level 2) from AI-assisted rubric assessments (Level 3), with transparent evaluation scope.
+- **Four-Factor Readiness Auditing:** Separate, explainable visibility into requirements completion, evidence readiness, source confidence, and deadline risk.
 
 ---
 
@@ -52,23 +53,43 @@ Most AI productivity tools generate text that looks plausible but hallucinate de
 ```
 
 1. **Intake & Cryptographic Preservation:** Upload an image poster, PDF document, or pasted announcement. Files are saved in local application-managed storage (`data/uploads/{userId}/sources/`) with SHA-256 integrity verification.
-2. **Schema-Constrained Extraction:** Processed via Google Gemini API Free Tier (or deterministic `MockAiProvider` for offline demo mode). The output is parsed and strictly validated against comprehensive Zod schemas.
+2. **Schema-Constrained Extraction:** Processed via Google Gemini API Free Tier (or deterministic `MockAiProvider` for automated unit tests). The output is parsed and strictly validated against comprehensive Zod schemas.
 3. **Extraction Review:** Grounded claims are reviewed by the user. Users can edit values, confirm trusted facts, mark details unknown, or remove ungrounded fields.
-4. **Agent Activation & DAG Compilation:** Compiles confirmed requirements into a Directed Acyclic Graph. Downstream tasks (e.g., repository setup) remain blocked until upstream prerequisites (e.g., architecture concept) are satisfied.
-5. **Automatic Unblocking:** Completing a prerequisite immediately transitions dependent tasks from `blocked` to `ready`.
-6. **Evidence Attachment (Levels 0–3):** Attach proof of completion evaluated against explicit criteria.
+4. **Agent Activation & DAG Compilation:** Compiles confirmed requirements into a Directed Acyclic Graph. Downstream tasks remain blocked until upstream prerequisites are satisfied.
+5. **Automatic Unblocking:** Completing a prerequisite immediately transitions dependent tasks from `blocked` to `ready`. Supports both **Strict Sequential (01 → 02 → 03)** and **Parallel DAG** execution modes.
+6. **Evidence Attachment (Levels 0–3):** Attach proof of completion (text explanations, files, or repository URLs) evaluated against explicit criteria.
 7. **Four-Factor Readiness Audit:** Evaluates requirements completion, evidence readiness, source confidence, and deadline risk, displaying exact missing items before submission.
 
 ---
 
 ## Technology Stack
 
-- **Frontend:** React 18, Expo Router mobile-first PWA, TypeScript, custom "Liquid Glass" CSS, Lucide / Feather icons, Radix UI accessibility primitives.
-- **Backend:** Express 5 REST API running on port 5001 with modular services for AI extraction, DAG dependency resolution, and secure file storage.
-- **Database:** PostgreSQL 16 running locally via Docker, managed through Drizzle ORM with full relational schema.
-- **AI Systems:** Google Gemini Developer API (Free Tier) server-side integration with configurable model (`gemini-2.5-flash`), Zod schema constraints, and deterministic `MockAiProvider`.
-- **Quality Assurance:** Vitest, React Testing Library, TypeScript strict mode (zero typecheck errors across 9 workspace packages), Prettier linting.
+- **Client Application:** React Native (0.86), Expo (57), Expo Router (57), React Native Web (0.21), React 19 (19.2), TypeScript.
+- **Visual Design System:** Custom "Spatial Liquid Glass" design system utilizing `expo-blur`, `react-native-reanimated`, Feather icons, and dynamic ambient wallpapers.
+- **Monetization & Entitlements:** RevenueCat `react-native-purchases` SDK (v10.10) for in-app paywall, subscription handling, and Pro entitlement gating.
+- **Backend Server:** Node.js Express 5 REST API running on port 5001 with modular services for AI extraction, DAG dependency resolution, and secure file storage.
+- **Database & ORM:** PostgreSQL 16 running locally via Docker container `actionlayer-postgres`, managed through Drizzle ORM with full relational schema.
+- **AI Systems:** Google Gemini Developer API (Free Tier server-side) with Zod schema validation, explicit privacy disclosure gates, and deterministic `MockAiProvider` for unit testing.
+- **Quality Assurance:** Vitest test suite (17 automated tests passing), TypeScript strict mode (zero typecheck errors across all workspace packages), Prettier linting.
 - **Package Manager:** pnpm workspaces.
+
+---
+
+## RevenueCat Integration
+
+ActionLayer includes a production-ready monetization architecture powered by the official RevenueCat (`react-native-purchases`) SDK:
+
+- **Freemium Tier (Free):** Full access to manual checklist creation, source viewing, and basic task management.
+- **ActionLayer PRO Tier:** Unlocks unlimited multimodal Gemini AI document extractions, automated 4-factor readiness audits, and custom Liquid Glass spatial themes.
+- **Entitlement Enforcement:** Protected features verify the `pro` entitlement from `CustomerInfo` before initiating heavy computational or extraction requests.
+- **Paywall Interface:** Implemented via a native frosted-glass Paywall component ([`components/Paywall.tsx`](artifacts/actionlayer-mobile/components/Paywall.tsx)) supporting offering retrieval, purchase execution, and purchase restoration.
+
+---
+
+## Persistence Model
+
+- **Authoritative Backend Store (PostgreSQL):** PostgreSQL 16 is the authoritative system of record for all sources, extraction jobs, claims, workflows, tasks, dependencies, evidence, verifications, and audit events.
+- **Client-Side Cache (AsyncStorage):** `@react-native-async-storage/async-storage` is used strictly on the mobile client for caching active agent state, user interface preferences (custom wallpapers, dim levels), and optimistic offline access.
 
 ---
 
@@ -77,15 +98,13 @@ Most AI productivity tools generate text that looks plausible but hallucinate de
 The application reads the Gemini model identifier from `process.env.GEMINI_MODEL`:
 
 ```bash
-# Recommended stable Flash model with multimodal (image/PDF/text) and structured JSON support:
+AI_PROVIDER="gemini"
 GEMINI_MODEL="gemini-2.5-flash"
 GEMINI_API_KEY="your-gemini-api-key"
-AI_PROVIDER="gemini"
-DEMO_MODE_ENABLED="true"
 ```
 
 - **Server-Side Only:** `GEMINI_API_KEY` is strictly confined to the backend server. It is never exposed to browser bundles, client logs, or environment endpoints.
-- **AI Safety & Fallback Rule:** When `AI_PROVIDER=gemini`, genuine API errors (such as quota exhaustion or network drop) trigger clear error messages with retry and manual-entry options—it **never** silently swaps to mock data without user knowledge. `MockAiProvider` runs only when explicitly requested (`AI_PROVIDER=mock`) or in deterministic automated test suites.
+- **AI Safety & Fallback Rule:** When `AI_PROVIDER=gemini`, genuine API errors (such as quota exhaustion or network drop) trigger clear error messages with retry and manual-entry options—it **never** silently swaps to mock data without user knowledge. `MockAiProvider` operates strictly when `AI_PROVIDER=mock` or during deterministic automated test execution.
 
 ---
 
@@ -110,15 +129,15 @@ Users must explicitly accept the disclosure before transmission, or they may cho
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/your-username/actionlayer.git
-   cd actionlayer
+   git clone https://github.com/rashidriyadh714-dev/Hpackathon_Competeion-.git
+   cd Hpackathon_Competeion-
    ```
 
 2. **Configure environment variables:**
    ```bash
    cp .env.example .env
-   # Edit .env to add your free Google Gemini API key if testing live extraction:
-   # GEMINI_API_KEY="AIzaSy..."
+   # Edit .env to add your free Google Gemini API key:
+   # GEMINI_API_KEY="your-api-key-here"
    ```
 
 3. **Start local PostgreSQL via Docker:**
@@ -136,7 +155,7 @@ Users must explicitly accept the disclosure before transmission, or they may cho
    pnpm --filter @workspace/db run push
    ```
 
-6. **Seed fictional demo competition data:**
+6. **Seed demo data (Optional):**
    ```bash
    pnpm run seed
    ```
@@ -146,23 +165,23 @@ Users must explicitly accept the disclosure before transmission, or they may cho
    pnpm run start:api
    ```
 
-8. **In a second terminal, start the mobile PWA (Port 8081):**
+8. **In a second terminal, start the mobile app (Port 8081):**
    ```bash
    pnpm run start:mobile
    ```
 
 9. **Open the application:**
-   Navigate to `http://localhost:8081` in your browser. (Switch your browser devtools to mobile view for the optimal mobile-first experience).
+   Navigate to [http://localhost:8081](http://localhost:8081) in your browser. (Toggle browser devtools to mobile view for the optimal mobile-first experience).
 
 ---
 
 ## Database Management Commands
 
 | Command | Purpose |
-| --- | --- |
+| :--- | :--- |
 | `pnpm run db:up` | Starts `actionlayer-postgres` container in Docker |
 | `pnpm run db:down` | Stops PostgreSQL container (preserves data volume) |
-| `pnpm run seed` | Seeds fictional "Northstar Build Challenge" demo data into database |
+| `pnpm run seed` | Seeds demo competition data into database |
 | `pnpm --filter @workspace/db run push` | Synchronizes Drizzle schema with PostgreSQL |
 | `docker exec actionlayer-postgres pg_dump -U actionlayer actionlayer_db > backup.sql` | Backs up database to SQL file |
 | `docker exec -i actionlayer-postgres psql -U actionlayer actionlayer_db < backup.sql` | Restores database from backup |
@@ -174,16 +193,16 @@ Users must explicitly accept the disclosure before transmission, or they may cho
 Run the full testing and quality pipeline:
 
 ```bash
-# 1. Typecheck (all 9 workspace packages)
+# 1. Typecheck (all workspace packages)
 pnpm run typecheck
 
 # 2. Lint check
 pnpm run lint
 
-# 3. Unit & integration test suite
+# 3. Automated test suite (Vitest)
 pnpm test
 
-# 4. Production build verification
+# 4. Web production export
 pnpm run build
 ```
 
@@ -194,56 +213,51 @@ pnpm run build
 - **Skipped:** 0
 - **Coverage Areas:**
   - Gemini extraction schema validation & rejection of malformed outputs
-  - Mock AI safety rules (no silent fallbacks in real mode)
+  - AI Safety: zero silent fallbacks when running in real Gemini mode
   - Deterministic DAG prerequisite resolution & cycle prevention
-  - Automatic task unblocking transitions
-  - Multi-level evidence verification tracking
+  - Automatic task unblocking transitions upon prerequisite completion
+  - Multi-level evidence verification schema validation
   - Four-factor readiness audit scoring
-  - Local file storage isolation & path traversal prevention
+  - Local file storage isolation, size capping (10MB), and SHA-256 checksums
 
 ---
 
-## The 14-Step Critical Judging Journey
+## Critical Validation Journey
 
-Judges can verify the complete competition vertical slice following these steps:
+Reviewers can verify the complete source-to-audit pipeline:
 
-1. **Intake Source:** Open **Capture**, select *"Explore Fictional Competition Demo"* or upload a poster.
-2. **AI Extraction:** Review the mandatory Gemini privacy notice and accept.
-3. **Review Grounded Claims:** Notice 6 extracted claims with confidence percentages and source excerpts.
-4. **Correct Uncertain Claim:** Click *"Edit"* on the deadline claim and save your correction.
-5. **Confirm Claims:** Confirm remaining items to mark them as trusted.
-6. **Activate Competition Agent:** Click *"Activate Competition Agent"*.
-7. **Open Requirement Graph:** Switch to the **Graph (DAG)** tab showing all 7 tasks.
-8. **Inspect Blocked Task:** Observe that *"Create public GitHub repo"* is marked **Blocked** by prerequisite *"Choose problem & write architecture concept"*.
-9. **Complete Prerequisite:** Click *"Start Task"* then *"Mark Complete"* on the concept task.
-10. **Observe Automatic Unblocking:** Watch the repository task immediately transition from **Blocked** to **Ready**.
-11. **Attach Evidence:** Click *"Attach Evidence"*, enter repository URL, and select verification level.
-12. **Inspect Verification Result:** Open the **Evidence** tab to see Level 2/3 verification status, rubric checks, and evaluation scope.
-13. **Run Four-Factor Readiness Audit:** On the **Overview** tab, click *"Run Four-Factor Readiness Audit"*.
-14. **Inspect Missing Items:** Review the exact remaining missing items and deadline risk reasons.
+1. **Intake Source:** Open **Capture** and upload an image poster, PDF, or paste text.
+2. **AI Privacy Disclosure:** Review and accept the mandatory Gemini privacy notice.
+3. **Multimodal Extraction:** Gemini processes the document into structured claims with page numbers and citations.
+4. **Review Grounded Claims:** Inspect extracted dates, organizers, and requirements with direct source excerpts.
+5. **Human-in-the-Loop Corrections:** Edit any ambiguous claims or mark unstated values as unknown.
+6. **Activate Agent:** Preview the generated agent and compile it into an active opportunity agent.
+7. **Requirement Graph:** Switch to the **Graph** tab to view the dependency DAG.
+8. **Inspect Blocked Tasks:** Observe that downstream tasks remain strictly **Blocked** by upstream prerequisites.
+9. **Execution Flow Modes:** Choose between **Strict Sequential (01 → 02 → 03...)** or **Parallel DAG** mode.
+10. **Complete Prerequisite:** Click *"Start Task"* then *"Mark Complete"* on an active prerequisite.
+11. **Observe Automatic Unblocking:** Watch downstream dependent tasks automatically transition from **Blocked** to **Ready**.
+12. **Attach Evidence:** Attach supporting evidence (text, link, or document) to a task.
+13. **Inspect Verification Assessment:** Review the evaluation scope and verification level.
+14. **Four-Factor Readiness Audit:** Click *"Run Four-Factor Readiness Audit"* on the Overview tab.
+15. **Inspect Missing Items:** Review exact requirements missing, unverified items, and deadline risk factors.
 
 ---
 
-## Current Scope & Future Roadmap
+## Scope & Future Roadmap
 
-ActionLayer ships a fully functional **Competition Agent** with a complete source-to-audit pipeline. The architecture is designed to scale into additional agent types and production deployment:
+ActionLayer's flagship supported workflow is the **Competition Agent**. The extraction and DAG architecture can classify and compile other document types (such as grants and assignments) as previews:
 
-1. **Expanding Agent Types:**
-   - The Competition Agent is fully supported with end-to-end extraction, review, DAG scheduling, evidence, and readiness auditing.
-   - Assignment Agent and Application Agent are included as labeled previews, with full pipeline support planned for upcoming releases.
-2. **Multi-User Cloud Deployment:**
-   - The current architecture runs in single-user local mode, optimized for fast judging and development. Multi-tenant cloud deployment with authenticated user isolation is the next infrastructure milestone.
-3. **Transparent AI Verification:**
-   - Level 3 verification is clearly labeled *"AI-assisted assessment"*, maintaining honest transparency. Future integration with third-party verification APIs will enable institutional-grade accreditation.
-4. **Upcoming Features:**
-   - Live URL ingestion with server-side safety validation
-   - External calendar synchronization
-   - Voice-note transcription for hands-free capture
-   - Production RevenueCat billing with real entitlement enforcement
+1. **Multi-User Cloud Deployment:** The current competition build operates in a documented single-user local mode. Production multi-tenant cloud deployment with verified session middleware is planned.
+2. **Transparent Verification:** Level 3 verification is clearly labeled *"AI-assisted assessment"*. Future integrations may support stronger external verification from authoritative systems where permitted.
+3. **Upcoming Capabilities:**
+   - Server-side authenticated URL crawler ingestion with SSRF protection
+   - Native calendar event synchronization
+   - Audio note transcription for hands-free intake
 
 ---
 
 ## License
 
 This project is open-source under the [Apache License, Version 2.0](LICENSE).  
-Copyright © 2026 ActionLayer Contributors.
+Copyright © 2026 Rashid Riyadh and ActionLayer contributors.
