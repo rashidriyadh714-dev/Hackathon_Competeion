@@ -129,8 +129,8 @@ Users must explicitly accept the disclosure before transmission, or they may cho
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/rashidriyadh714-dev/Hpackathon_Competeion-.git
-   cd Hpackathon_Competeion-
+   git clone https://github.com/rashidriyadh714-dev/Hackathon_Competeion.git
+   cd Hackathon_Competeion
    ```
 
 2. **Configure environment variables:**
